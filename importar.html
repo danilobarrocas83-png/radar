@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Radar Comercial — salvando suas marcações</title>
+<style>
+:root{
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#EDF1F4;
+  --line:#D3DBE2; --text:#101820; --text-2:#48586A; --text-3:#77879A;
+  --accent:#0E6F78; --quente:#C4342F; --quente-soft:#FBE4E2;
+  --ok:#186B42; --ok-soft:#DCEFE4;
+  --shadow:0 1px 2px rgba(16,24,32,.06),0 4px 14px rgba(16,24,32,.05);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ground:#0D141B; --surface:#141D26; --surface-2:#1B2732;
+    --line:#2D3D4C; --text:#E8EEF4; --text-2:#9DAEBF; --text-3:#728499;
+    --accent:#3FB0BA; --quente:#F0716B; --quente-soft:#3A1E1D;
+    --ok:#4FBF87; --ok-soft:#14301F;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:24px 16px;background:var(--ground);color:var(--text);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.card{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow);padding:26px 24px 22px}
+.brand{display:flex;align-items:center;gap:9px;margin-bottom:18px}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--quente);
+  box-shadow:0 0 0 4px var(--quente-soft);flex:none}
+.brand b{font-size:14.5px;font-weight:700;letter-spacing:-.02em}
+h1{margin:0 0 6px;font-size:21px;line-height:1.25;letter-spacing:-.01em}
+p{margin:0;color:var(--text-2)}
+.n{font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
+.bar{height:6px;border-radius:99px;background:var(--surface-2);margin:18px 0 6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .35s}
+.bar.ok i{background:var(--ok);width:100%}
+.bar.erro i{background:var(--quente)}
+.st{font-size:12.5px;color:var(--text-3);font-family:"IBM Plex Mono",ui-monospace,monospace;min-height:18px}
+.acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.bt{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:8px;
+  background:var(--accent);color:#fff;font-weight:600;text-decoration:none;font-size:14px;border:0;cursor:pointer;font-family:inherit}
+.bt.ghost{background:transparent;color:var(--text-2);border:1px solid var(--line)}
+.ok h1{color:var(--ok)} .erro h1{color:var(--quente)}
+details{margin-top:16px;font-size:12.5px;color:var(--text-3)}
+details pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:var(--text-2);
+  background:var(--surface-2);padding:8px;border-radius:6px;max-height:160px;overflow:auto}
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="brand"><span class="dot"></span><b>Radar Comercial</b></div>
+  <h1 id="t">Salvando suas marcações…</h1>
+  <p id="p">Um instante. Não feche esta aba.</p>
+  <div class="bar" id="bar"><i></i></div>
+  <div class="st" id="st"></div>
+  <div class="acoes" id="acoes"></div>
+  <details id="det" hidden><summary>Detalhes técnicos</summary><pre id="log"></pre></details>
+</div>
+<script>
+"use strict";
+/* ============================================================
+   importar.html - porta de entrada do Radar novo.
+   O link antigo (artifact do claude.ai) nao consegue gravar no banco.
+   Quando o vendedor clica em "Salvar e abrir o Radar novo" la, ele chega
+   aqui com as marcacoes dele no #hash da URL (o hash nunca sai do
+   navegador). Esta pagina:
+     1. le o pacote,
+     2. grava no Supabase (mesma tabela "atividade" que o radar.html usa),
+     3. deixa uma copia no localStorage deste endereco (radar.html le),
+     4. avisa a aba antiga que deu certo (postMessage) para ela limpar a fila,
+     5. abre o radar.html ja com o vendedor entrado.
+   Se o banco nao responder, nada se perde: o pacote fica na fila local
+   (radar_fila) e o radar.html reenvia sozinho.
+   ============================================================ */
+var SB = {
+  url: "https://keaildawjiksgxpmyizv.supabase.co",
+  keys: ["sb_publishable_T_OQGszwVhLhaSmDVbNZLw_4w67ARSH",
+         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlYWlsZGF3amlrc2d4cG15aXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzIyNjAsImV4cCI6MjEwNDEwODI2MH0.VS-uYRjpZbPoLKgH4IJ9yrnDM7r45io_muCIXfAYt3U"],
+  i: 0
+};
+var RADAR = "radar.html";
+var LOG = [];
+function log(m){ LOG.push(m); var el=document.getElementById("log"); if(el) el.textContent=LOG.join("\n"); }
+function $(id){ return document.getElementById(id); }
+function texto(id,t){ var e=$(id); if(e) e.textContent=t; }
+function estado(cls){ $("card").className="card "+(cls||""); $("bar").className="bar "+(cls||""); }
+function barra(p){ $("bar").firstElementChild.style.width=Math.max(0,Math.min(100,p))+"%"; }
+function botao(rot,href,ghost){
+  var a=document.createElement("a"); a.className="bt"+(ghost?" ghost":""); a.href=href; a.textContent=rot;
+  $("acoes").appendChild(a); return a;
+}
+function irParaRadar(ms){ setTimeout(function(){ location.replace(RADAR); }, ms||1200); }
+
+/* ---------- Supabase (mesmo esquema do radar.html) ---------- */
+try{ var _ki=parseInt(localStorage.getItem("radar_chave"),10); if(_ki>=0 && _ki<SB.keys.length) SB.i=_ki; }catch(e){}
+function sbChave(){ return SB.keys[SB.i]; }
+function sbTrocarChave(){ if(SB.i<SB.keys.length-1){ SB.i++; try{localStorage.setItem("radar_chave",String(SB.i));}catch(e){} return true; } return false; }
+function sbCab(extra){ var h={"apikey":sbChave(),"Authorization":"Bearer "+sbChave(),"Content-Type":"application/json"}; if(extra) for(var k in extra) h[k]=extra[k]; return h; }
+function sbPedir(caminho,opts){
+  opts=opts||{};
+  function tentativa(){ var o={method:opts.method||"GET",headers:sbCab(opts.headers)}; if(opts.body) o.body=opts.body; return fetch(SB.url.replace(/\/+$/,"")+"/rest/v1/"+caminho,o); }
+  return tentativa().then(function(r){ if((r.status===401||r.status===403)&&sbTrocarChave()) return tentativa(); return r; });
+}
+
+/* ---------- pacote no hash ---------- */
+function deB64url(s){
+  s=String(s||"").replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="=";
+  var bin=atob(s), bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder("utf-8").decode(bytes);
+}
+function lerPacote(){
+  var h=location.hash||"";
+  if(h.charAt(0)==="#") h=h.slice(1);
+  if(!h) return null;
+  var m=h.match(/(?:^|&)p=([^&]+)/); if(m) h=m[1];
+  var txt;
+  try{ txt=deB64url(h); }catch(e){ try{ txt=decodeURIComponent(h); }catch(e2){ return {erro:"pacote ilegivel"}; } }
+  var p; try{ p=JSON.parse(txt); }catch(e){ return {erro:"pacote ilegivel"}; }
+  if(!p || p.r!=="radar-fila" || !/^v\d{1,3}$/.test(String(p.vend||""))) return {erro:"pacote nao e do Radar"};
+  var itens=(p.itens||[]).filter(function(x){ return x && x.lead && x.s; }).map(function(x){
+    return { vend:p.vend, lead:String(x.lead), s:x.s||null, m:x.m||null, d:x.d?String(x.d).slice(0,10):null, o:x.o||null };
+  });
+  return { vend:p.vend, nome:p.nome||p.vend, itens:itens };
+}
+
+/* ---------- espelho local deste endereco ---------- */
+function lerJSON(k,def){ try{ var v=JSON.parse(localStorage.getItem(k)||"null"); return v==null?def:v; }catch(e){ return def; } }
+function gravarJSON(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
+function regDe(x){ var r={}; if(x.s) r.s=x.s; if(x.m) r.m=x.m; if(x.d) r.d=x.d; if(x.o) r.o=x.o; return r; }
+
+/* Quem e mais novo vence: se aqui (ou no banco) o mesmo lead ja tem uma
+   marcacao de data posterior, a que veio do link antigo nao sobrescreve. */
+function filtrarMaisNovos(itens, vend, datasBanco){
+  var espelho=lerJSON("radar_ativ_"+vend,{})||{};
+  var ficam=[], pulados=0;
+  itens.forEach(function(x){
+    var e=espelho[x.lead], db=datasBanco[x.lead];
+    var maisNovoLocal = e && e.d && x.d && String(e.d) > String(x.d);
+    var maisNovoBanco = db && x.d && String(db) > String(x.d);
+    if(maisNovoLocal || maisNovoBanco){ pulados++; return; }
+    ficam.push(x);
+  });
+  return { ficam:ficam, pulados:pulados };
+}
+function gravarEspelho(itens, vend){
+  var espelho=lerJSON("radar_ativ_"+vend,{})||{};
+  itens.forEach(function(x){ espelho[x.lead]=regDe(x); });
+  gravarJSON("radar_ativ_"+vend, espelho);
+}
+function enfileirarLocal(itens){
+  var fila=lerJSON("radar_fila",[])||[];
+  itens.forEach(function(x){
+    fila=fila.filter(function(y){ return !(y.vend===x.vend && y.lead===x.lead); });
+    fila.push({vend:x.vend,lead:x.lead,s:x.s,m:x.m,d:x.d,o:x.o});
+  });
+  gravarJSON("radar_fila", fila);
+}
+function entrarComo(vend){ try{ localStorage.setItem("radar_vend",vend); }catch(e){} }
+
+function avisarAbaAntiga(msg){
+  try{ if(window.opener && !window.opener.closed) window.opener.postMessage(msg,"*"); }catch(e){ log("postMessage: "+e.message); }
+}
+
+/* ---------- envio ---------- */
+function datasNoBanco(vend){
+  return sbPedir("atividade?select=lead,d&vend=eq."+encodeURIComponent(vend))
+    .then(function(r){ if(!r.ok) throw new Error(String(r.status)); return r.json(); })
+    .then(function(linhas){ var m={}; (linhas||[]).forEach(function(x){ if(x&&x.lead&&x.d) m[x.lead]=String(x.d).slice(0,10); }); return m; })
+    .catch(function(e){ log("leitura do banco falhou ("+e.message+"), sigo sem comparar"); return {}; });
+}
+function enviarLotes(itens, aoProgredir){
+  var lotes=[]; for(var i=0;i<itens.length;i+=50) lotes.push(itens.slice(i,i+50));
+  var feitos=0;
+  function prox(){
+    if(!lotes.length) return Promise.resolve();
+    var lote=lotes.shift();
+    return sbPedir("atividade",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(lote)})
+      .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(r.status+" "+t); }); feitos+=lote.length; aoProgredir(feitos); return prox(); });
+  }
+  return prox();
+}
+
+/* ---------- fluxo ---------- */
+function principal(){
+  var p=lerPacote();
+  if(!p){
+    estado(""); texto("t","Nada para importar"); texto("p","Este endereço só serve para trazer marcações do link antigo. Abrindo o Radar…");
+    botao("Abrir o Radar", RADAR); irParaRadar(1800); return;
+  }
+  if(p.erro){
+    estado("erro"); texto("t","Não consegui ler o pacote"); texto("p",p.erro+". Volte na aba antiga e clique de novo no botão de salvar.");
+    botao("Abrir o Radar", RADAR, true); log(p.erro); $("det").hidden=false; return;
+  }
+  entrarComo(p.vend);
+  if(!p.itens.length){
+    estado("ok"); texto("t","Nada pendente"); texto("p","Nenhuma marcação nova para salvar. Abrindo o Radar como "+p.nome+"…");
+    avisarAbaAntiga({r:"radar-importado",ok:true,vend:p.vend,n:0,leads:[]});
+    botao("Abrir o Radar", RADAR); irParaRadar(1500); return;
+  }
+  texto("p","Trazendo "+p.itens.length+" marcação(ões) de "+p.nome+" para o sistema.");
+  barra(8); texto("st","conferindo o que já existe no banco…");
+  datasNoBanco(p.vend).then(function(datas){
+    var f=filtrarMaisNovos(p.itens,p.vend,datas);
+    if(f.pulados) log(f.pulados+" marcação(ões) ignorada(s): já havia registro mais novo");
+    if(!f.ficam.length){
+      gravarEspelho([],p.vend);
+      estado("ok"); texto("t","Já estava tudo salvo"); texto("p","O sistema já tinha registros mais novos dessas "+p.itens.length+" marcações. Abrindo o Radar…");
+      texto("st","");
+      avisarAbaAntiga({r:"radar-importado",ok:true,vend:p.vend,n:0,leads:p.itens.map(function(x){return x.lead;})});
+      botao("Abrir o Radar", RADAR); irParaRadar(1800); return;
+    }
+    barra(20); texto("st","salvando 0 de "+f.ficam.length+"…");
+    enviarLotes(f.ficam,function(n){ barra(20+70*n/f.ficam.length); texto("st","salvando "+n+" de "+f.ficam.length+"…"); })
+      .then(function(){
+        gravarEspelho(f.ficam,p.vend);
+        estado("ok"); barra(100);
+        texto("t",f.ficam.length+" marcação(ões) salva(s) no sistema");
+        texto("p","Tudo certo, "+p.nome.split(" ")[0]+". A partir de agora use só este endereço - ele salva sozinho. Abrindo o seu Radar…");
+        texto("st","");
+        avisarAbaAntiga({r:"radar-importado",ok:true,vend:p.vend,n:f.ficam.length,leads:p.itens.map(function(x){return x.lead;})});
+        botao("Abrir o Radar", RADAR); irParaRadar(1800);
+      })
+      .catch(function(e){
+        /* o banco nao respondeu: guarda aqui e o radar.html reenvia sozinho */
+        log("envio falhou: "+e.message);
+        gravarEspelho(f.ficam,p.vend); enfileirarLocal(f.ficam);
+        estado("erro"); texto("t","O banco não respondeu agora");
+        texto("p","Nada se perdeu: guardei as "+f.ficam.length+" marcação(ões) aqui e o Radar reenvia sozinho quando a conexão voltar. Abrindo o Radar…");
+        texto("st",""); $("det").hidden=false;
+        avisarAbaAntiga({r:"radar-importado",ok:true,vend:p.vend,n:f.ficam.length,leads:p.itens.map(function(x){return x.lead;}),pendente:true});
+        botao("Abrir o Radar", RADAR); irParaRadar(3500);
+      });
+  });
+}
+try{ principal(); }catch(e){
+  estado("erro"); texto("t","Deu um erro inesperado"); texto("p",String(e && e.message || e)); botao("Abrir o Radar", RADAR, true);
+}
+</script>
+</body>
+</html>
