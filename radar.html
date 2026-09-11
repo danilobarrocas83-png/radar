@@ -701,6 +701,8 @@ function salvarReg(leadId,patch,vid,semRender){
   m[leadId]=Object.assign({},atual,patch);
   gravarLocal(vid);
   enfileirar(vid,leadId,m[leadId]);
+  /* so a classificacao (status) vira toque no historico; anotacao nao */
+  if(patch && patch.s) registrarToque(vid,leadId,m[leadId]);
   if(!semRender) render();
 }
 function salvarEquipe(){
@@ -739,7 +741,7 @@ document.addEventListener("focusout",function(){
   setTimeout(function(){ if(RENDER_PEND&&!digitando()) render(); },60);
 });
 
-var VERSAO_RADAR="10/09/2026 - transferencia automatica para o Radar novo";
+var VERSAO_RADAR="11/09/2026 - aba Historico por periodo + registro de toques";
 /* ---------- gate: quem e voce ---------- */
 function entrarComo(p){
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
@@ -1063,6 +1065,13 @@ function painelDiagnostico(main){
         DIAG.escritaOk===null?"nada enviado nesta sessao":(DIAG.escritaOk?("ok as "+DIAG.enviadoAs):("FALHOU - "+DIAG.escritaErro)),
         DIAG.escritaOk===null?"":(DIAG.escritaOk?okc:ruim));
   linha("Na fila para subir", String(FILA.length), FILA.length?ruim:okc);
+  linha("Historico de toques (tabela historico)",
+        HIST.ok===null?"le ao abrir a aba Historico":(HIST.ok?((HIST.linhas||[]).length+" registros, lido as "+HIST.lidoAs):("FALHOU - "+HIST.erro)),
+        HIST.ok===null?"":(HIST.ok?okc:ruim));
+  linha("Ultimo registro de toque",
+        DIAG.histEscritaOk===null?"nenhum toque nesta sessao":(DIAG.histEscritaOk?("ok as "+DIAG.histEnviadoAs):("FALHOU - "+DIAG.histEscritaErro)),
+        DIAG.histEscritaOk===null?"":(DIAG.histEscritaOk?okc:ruim));
+  linha("Toques na fila", String(FILA_H.length), FILA_H.length?ruim:okc);
   linha("Versao desta pagina", VERSAO_RADAR);
 
   var porV=el("div",{style:"margin-top:12px"});
@@ -1135,7 +1144,7 @@ function shell(){
     v.gestor?["ranking","Ranking",null]:["resumo","Resumo do dia",null],
     ["scripts","Scripts",null]
   ];
-  if(v.gestor) abas.push(["gerencial","Gerencial",null]);
+  if(v.gestor){ abas.push(["gerencial","Gerencial",null]); abas.push(["historico","Histórico",null]); }
 
   var nav=el("nav",{class:"rail"},[
     el("div",{class:"brand"},[el("span",{class:"dot"}),el("b",{text:"Radar Comercial"})])
@@ -1174,6 +1183,7 @@ function shell(){
   else if(STATE.view==="scripts") viewScripts(main);
   else if(STATE.view==="resumo") viewResumo(main);
   else if(STATE.view==="gerencial"){ viewGerencial(main); painelDiagnostico(main); }
+  else if(STATE.view==="historico"){ if(v.gestor) viewHistorico(main); else viewLeads(main); }
   else if(STATE.view==="admin") viewAdmin(main);
 
   return el("div",{id:"app"},[nav,main]);
@@ -1186,6 +1196,7 @@ var ICONES={
  scripts:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 2h6L13 5.5V14H3.5z"/><path d="M9.2 2v3.6H13"/></svg>',
  resumo:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 11.5 6 7l3 2.6L14 4"/><path d="M10.5 4H14v3.4"/></svg>',
  gerencial:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="1.6"/><path d="M2 6.2h12M6.2 6.2v7.3"/></svg>',
+ historico:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.6"/><path d="M2 6.5h12M5.5 1.8V4M10.5 1.8V4M4.8 9.5h2M9.2 9.5h2M4.8 12h2"/></svg>',
  admin:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6" cy="5.5" r="2.4"/><path d="M1.8 13.4c.5-2.3 2.2-3.5 4.2-3.5s3.7 1.2 4.2 3.5"/><circle cx="12" cy="6.4" r="1.8"/><path d="M11 10c1.9-.2 3 .9 3.3 2.6"/></svg>'
 };
 
@@ -2019,7 +2030,8 @@ var PIN_GESTOR = "7010";
 var DIAG = { leituraOk:null, leituraErro:"", linhas:0, lidoAs:"",
              escritaOk:null, escritaErro:"", enviadoAs:"",
              leadsFonte:"embutida", leadsErro:"", leadsNuvemData:"",
-             leadsEmbutidaData:"", leadsNuvemLinhas:0, leadsSoDaNuvem:0 };
+             leadsEmbutidaData:"", leadsNuvemLinhas:0, leadsSoDaNuvem:0,
+             histEscritaOk:null, histEscritaErro:"", histEnviadoAs:"" };
 function horaAgora(){
   var d=new Date();
   return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
@@ -2176,8 +2188,8 @@ function linhaParaReg(x){
 }
 function carregarNuvem(){
   if(!sbConfigurado()) return Promise.resolve(false);
-  return sbPedir("atividade?select=vend,lead,s,m,d,o")
-    .then(function(r){ if(!r.ok) throw new Error(String(r.status)); return r.json(); })
+  /* paginado: o Supabase corta em 1000 linhas por pedido */
+  return sbTudo("atividade?select=vend,lead,s,m,d,o&order=vend.asc,lead.asc")
     .then(function(linhas){
       var mapa = {};
       /* comeca do que ja existe na maquina: o banco COMPLETA, nunca apaga.
@@ -2284,9 +2296,390 @@ function montarLotes(lista){
 }
 montarLotes(aplicarRemanejo(LEADS_EMBUTIDOS));
 
+
+/* ============================================================
+   HISTORICO DE TOQUES (aba do gestor)
+   ------------------------------------------------------------
+   A tabela "atividade" guarda so o ESTADO ATUAL de cada lead: quando o
+   vendedor remarca, a data anterior some. Para saber quanto cada um
+   trabalhou por dia, cada clique tambem vai para a tabela "historico"
+   (append-only: nunca sobrescreve). O que existia antes da tabela entrou
+   como semente pela data da ultima marcacao (11/09/2026), e o que chega
+   por outro caminho (importar.html) e completado pela mesma regra.
+   ============================================================ */
+var FILA_H = [];
+var FILA_H_MAX = 5000;
+function lerFilaH(){
+  try{ FILA_H = JSON.parse(localStorage.getItem("radar_fila_h")||"[]") || []; }catch(e){ FILA_H = []; }
+}
+function gravarFilaH(){
+  if(FILA_H.length > FILA_H_MAX) FILA_H = FILA_H.slice(FILA_H.length - FILA_H_MAX);
+  try{ localStorage.setItem("radar_fila_h", JSON.stringify(FILA_H)); }catch(e){}
+}
+function idEvento(vid, leadId){
+  return vid + ":" + leadId + ":" + Date.now().toString(36) + ":" + Math.random().toString(36).slice(2,8);
+}
+/* Chamado a cada classificacao (salvarReg com status). Um clique = um toque. */
+function registrarToque(vid, leadId, reg){
+  if(presoNoClaude()) return;          /* nesse endereco nada chega ao banco */
+  if(!reg || !reg.s) return;
+  FILA_H.push({ ev:idEvento(vid,leadId), vend:vid, lead:leadId,
+                s:reg.s||null, m:reg.m||null, d:reg.d||HOJE,
+                ts:new Date().toISOString() });
+  gravarFilaH();
+  escoarH();
+}
+var ESCOANDO_H = false;
+function escoarH(){
+  if(ESCOANDO_H || !FILA_H.length) return;
+  if(!sbConfigurado()) return;
+  if(typeof navigator !== "undefined" && navigator.onLine === false) return;
+  ESCOANDO_H = true;
+  var lote = FILA_H.slice(0, 50);
+  sbPedir("historico?on_conflict=ev", {
+    method: "POST",
+    headers: { "Prefer": "resolution=ignore-duplicates,return=minimal" },
+    body: JSON.stringify(lote)
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error(r.status + " " + t); });
+    var ids = {}; lote.forEach(function(x){ ids[x.ev] = 1; });
+    FILA_H = FILA_H.filter(function(x){ return !ids[x.ev]; });
+    gravarFilaH();
+    ESCOANDO_H = false;
+    DIAG.histEscritaOk = true; DIAG.histEscritaErro = ""; DIAG.histEnviadoAs = horaAgora();
+    if(FILA_H.length) escoarH();
+  }).catch(function(e){
+    ESCOANDO_H = false;
+    DIAG.histEscritaOk = false; DIAG.histEscritaErro = e.message;
+    if(window.console && console.warn) console.warn("[radar] historico: nao consegui registrar agora: " + e.message);
+  });
+}
+
+/* O Supabase devolve no maximo 1000 linhas por pedido. Sem paginar, a
+   partir da milesima marcacao o painel passaria a mostrar menos do que
+   existe, sem nenhum aviso. */
+function sbTudo(caminho, passo){
+  passo = passo || 1000;
+  var tudo = [];
+  function pagina(ini){
+    var fim = ini + passo - 1;
+    return sbPedir(caminho, { headers: { "Range-Unit":"items", "Range": ini+"-"+fim } })
+      .then(function(r){
+        if(r.status === 416) return tudo;
+        if(!r.ok) throw new Error(String(r.status));
+        return r.json().then(function(linhas){
+          linhas = linhas || [];
+          tudo = tudo.concat(linhas);
+          if(linhas.length < passo) return tudo;
+          return pagina(ini + passo);
+        });
+      });
+  }
+  return pagina(0);
+}
+
+/* ---------- leitura do historico (so o gestor precisa) ---------- */
+var HIST = { linhas:null, ok:null, erro:"", lidoAs:"", carregando:false };
+function carregarHistorico(){
+  if(!sbConfigurado()){ HIST.ok=false; HIST.erro="sem banco configurado"; if(HIST.linhas===null) HIST.linhas=[]; return Promise.resolve(false); }
+  if(HIST.carregando) return Promise.resolve(false);
+  HIST.carregando = true;
+  return sbTudo("historico?select=vend,lead,s,m,d,ts&order=id.asc")
+    .then(function(linhas){
+      HIST.linhas = linhas || []; HIST.ok = true; HIST.erro = ""; HIST.lidoAs = horaAgora();
+      HIST.carregando = false; return true;
+    })
+    .catch(function(e){
+      HIST.carregando = false; HIST.ok = false; HIST.erro = e.message; HIST.lidoAs = horaAgora();
+      if(HIST.linhas === null) HIST.linhas = [];
+      if(window.console && console.warn) console.warn("[radar] historico: leitura falhou: " + e.message);
+      return false;
+    });
+}
+
+/* Junta os toques registrados com o estado atual da "atividade": marcacao
+   sem registro (feita antes da tabela existir, ou vinda do importar.html)
+   entra pela data da ultima marcacao. A chave vend|lead|data|status evita
+   contar duas vezes. */
+function eventosHistorico(){
+  var evs = [], chave = {};
+  (HIST.linhas||[]).forEach(function(x){
+    if(!x || !x.vend || !x.lead || !x.s) return;
+    var d = String(x.d||"").slice(0,10) || String(x.ts||"").slice(0,10);
+    if(!d) return;
+    evs.push({ vend:x.vend, lead:x.lead, s:x.s, m:x.m||null, d:d, ts:x.ts||"", real:true });
+    chave[x.vend+"|"+x.lead+"|"+d+"|"+x.s] = 1;
+  });
+  Object.keys(STATE.atividade||{}).forEach(function(vid){
+    var m = STATE.atividade[vid]||{};
+    Object.keys(m).forEach(function(leadId){
+      var r = m[leadId]; if(!r || !r.s || !r.d) return;
+      if(chave[vid+"|"+leadId+"|"+r.d+"|"+r.s]) return;
+      evs.push({ vend:vid, lead:leadId, s:r.s, m:r.m||null, d:r.d, ts:"", real:false });
+    });
+  });
+  return evs;
+}
+
+/* ---------- periodos ---------- */
+var HV = { periodo:"semana", ini:"", fim:"", grupo:"", metrica:"toques" };
+function somaDiasLocal(iso, n){ var d=new Date(iso+"T12:00:00"); d.setDate(d.getDate()+n); return dataLocal(d); }
+function inicioSemana(iso){ var d=new Date(iso+"T12:00:00"); var dia=(d.getDay()+6)%7; d.setDate(d.getDate()-dia); return dataLocal(d); }
+function inicioMes(iso){ return iso.slice(0,7)+"-01"; }
+function fimMes(iso){ return dataLocal(new Date(+iso.slice(0,4), +iso.slice(5,7), 0, 12)); }
+function diasEntre(a,b){ return Math.round((new Date(b+"T12:00:00")-new Date(a+"T12:00:00"))/86400000)+1; }
+var PERIODOS=[
+  ["hoje","Hoje"],["ontem","Ontem"],["semana","Esta semana"],["semana_passada","Semana passada"],
+  ["mes","Este mês"],["mes_passado","Mês passado"],["total","Total"],["custom","De / até"]
+];
+function periodoAtual(evs){
+  var p = HV.periodo, ini, fim = HOJE, t;
+  if(p==="hoje"){ ini=HOJE; }
+  else if(p==="ontem"){ ini=fim=somaDiasLocal(HOJE,-1); }
+  else if(p==="semana"){ ini=inicioSemana(HOJE); }
+  else if(p==="semana_passada"){ fim=somaDiasLocal(inicioSemana(HOJE),-1); ini=somaDiasLocal(fim,-6); }
+  else if(p==="mes"){ ini=inicioMes(HOJE); }
+  else if(p==="mes_passado"){ fim=somaDiasLocal(inicioMes(HOJE),-1); ini=inicioMes(fim); }
+  else if(p==="total"){ ini=""; evs.forEach(function(e){ if(e.d && (!ini || e.d<ini)) ini=e.d; }); if(!ini) ini=HOJE; }
+  else { ini=HV.ini||somaDiasLocal(HOJE,-6); fim=HV.fim||HOJE; if(ini>fim){ t=ini; ini=fim; fim=t; } }
+  return { ini:ini, fim:fim };
+}
+function grupoAuto(ini,fim){
+  var n=diasEntre(ini,fim);
+  return n<=31?"dia":(n<=140?"semana":"mes");
+}
+function chaveBucket(d, grupo){
+  if(grupo==="mes") return d.slice(0,7);
+  if(grupo==="semana") return inicioSemana(d);
+  return d;
+}
+var MESES_CURTO=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+var DIAS_CURTO=["dom","seg","ter","qua","qui","sex","sáb"];
+function rotuloBucket(k, grupo){
+  if(grupo==="mes") return MESES_CURTO[+k.slice(5,7)-1]+"/"+k.slice(2,4);
+  if(grupo==="semana") return "sem. "+dataBR(k);
+  return DIAS_CURTO[new Date(k+"T12:00:00").getDay()]+" "+dataBR(k);
+}
+function listaBuckets(ini, fim, grupo){
+  var out=[], cur, guard=0;
+  if(grupo==="mes"){ cur=inicioMes(ini); while(cur<=fim && guard++<120){ out.push(cur.slice(0,7)); cur=somaDiasLocal(fimMes(cur),1); } }
+  else if(grupo==="semana"){ cur=inicioSemana(ini); while(cur<=fim && guard++<400){ out.push(cur); cur=somaDiasLocal(cur,7); } }
+  else { cur=ini; while(cur<=fim && guard++<400){ out.push(cur); cur=somaDiasLocal(cur,1); } }
+  return out;
+}
+var RESPOSTA=["conversa","reuniao","proposta","fechado"];
+var METRICAS=[
+  ["toques","Toques"],["leads","Leads distintos"],["contatos","1º contato"],
+  ["respostas","Respostas"],["reunioes","Reuniões"],["fechados","Fechados"]
+];
+function contadorVazio(){ return {toques:0,contatos:0,followups:0,respostas:0,reunioes:0,fechados:0,perdidos:0,_leads:{},_dias:{}}; }
+function somarEvento(c, e){
+  c.toques++;
+  c._leads[e.lead]=1; c._dias[e.d]=1;
+  if(e.s==="contatado") c.contatos++;
+  if(e.s==="fup1"||e.s==="fup2") c.followups++;
+  if(RESPOSTA.indexOf(e.s)>=0) c.respostas++;
+  if(e.s==="reuniao") c.reunioes++;
+  if(e.s==="fechado") c.fechados++;
+  if(e.s==="perdido"||e.s==="bloqueado") c.perdidos++;
+}
+function fecharContador(c){
+  c.leads=Object.keys(c._leads).length; c.dias=Object.keys(c._dias).length;
+  c.mediaDia=c.dias?c.toques/c.dias:0;
+  return c;
+}
+
+/* ---------- VIEW: historico ---------- */
+function viewHistorico(main){
+  main.appendChild(el("div",{class:"page-head"},[el("div",{},[
+    el("h1",{text:"Histórico do time"}),
+    el("p",{text:"Quanto cada vendedor trabalhou, por período. Um toque é cada classificação registrada (mensagem enviada, follow-up, resposta, reunião…). Escolha o período e o corte por dia, semana ou mês."})
+  ])]));
+
+  if(HIST.linhas===null){
+    main.appendChild(el("div",{class:"panel"},[el("div",{class:"empty",text:"Lendo o histórico no banco…"})]));
+    carregarHistorico().then(function(){ pedirRender(); });
+    return;
+  }
+
+  if(HIST.ok===false){
+    main.appendChild(el("div",{class:"regra",style:"margin-bottom:14px"},[
+      el("b",{text:"Não consegui ler a tabela de histórico ("+HIST.erro+")"}),
+      el("div",{text:"Os números abaixo estão vindo só da data da última marcação de cada lead. Se a tabela 'historico' ainda não existe no Supabase, é preciso criá-la; se existe, tente 'Reler agora' no fim da página."})
+    ]));
+  }
+  var evs = eventosHistorico();
+  var per = periodoAtual(evs);
+  var grupo = HV.grupo || grupoAuto(per.ini, per.fim);
+  var noPeriodo = evs.filter(function(e){ return e.d>=per.ini && e.d<=per.fim; });
+
+  /* --- filtros --- */
+  var filtros = el("div",{class:"filters"});
+  PERIODOS.forEach(function(p){
+    filtros.appendChild(el("button",{class:"chip","aria-pressed":HV.periodo===p[0]?"true":"false",
+      onclick:function(){ HV.periodo=p[0]; HV.grupo=""; render(); }},[document.createTextNode(p[1])]));
+  });
+  main.appendChild(filtros);
+  if(HV.periodo==="custom"){
+    var de=el("input",{type:"date",class:"search",style:"max-width:160px;border-radius:6px",value:per.ini,
+      onchange:function(e){ HV.ini=e.target.value; e.target.blur(); render(); }});
+    var ate=el("input",{type:"date",class:"search",style:"max-width:160px;border-radius:6px",value:per.fim,
+      onchange:function(e){ HV.fim=e.target.value; e.target.blur(); render(); }});
+    main.appendChild(el("div",{class:"filters"},[
+      el("span",{style:"font-size:12.5px;color:var(--text-2)",text:"De"}),de,
+      el("span",{style:"font-size:12.5px;color:var(--text-2)",text:"até"}),ate
+    ]));
+  }
+  var linhaCorte = el("div",{class:"filters",style:"margin-top:-4px"});
+  linhaCorte.appendChild(el("span",{style:"font-size:12.5px;color:var(--text-2);margin-right:2px",text:"Ver por:"}));
+  [["dia","Dia"],["semana","Semana"],["mes","Mês"]].forEach(function(g){
+    linhaCorte.appendChild(el("button",{class:"chip","aria-pressed":grupo===g[0]?"true":"false",
+      onclick:function(){ HV.grupo=g[0]; render(); }},[document.createTextNode(g[1])]));
+  });
+  linhaCorte.appendChild(el("span",{style:"font-size:12.5px;color:var(--text-2);margin-left:10px;margin-right:2px",text:"Mostrar:"}));
+  var sel=el("select",{class:"search",style:"max-width:190px;border-radius:6px;padding:5px 9px",
+    onchange:function(e){ HV.metrica=e.target.value; e.target.blur(); render(); }});
+  METRICAS.forEach(function(m){ var o=el("option",{value:m[0],text:m[1]}); if(HV.metrica===m[0]) o.selected=true; sel.appendChild(o); });
+  linhaCorte.appendChild(sel);
+  main.appendChild(linhaCorte);
+
+  /* --- agregacao --- */
+  var buckets = listaBuckets(per.ini, per.fim, grupo);
+  var reps = todosVend();
+  var porV = {}, porVB = {}, total = contadorVazio(), porB = {};
+  reps.forEach(function(p){ porV[p.id]=contadorVazio(); porVB[p.id]={}; });
+  buckets.forEach(function(b){ porB[b]=contadorVazio(); });
+  noPeriodo.forEach(function(e){
+    if(!porV[e.vend]){ porV[e.vend]=contadorVazio(); porVB[e.vend]={}; }
+    var b = chaveBucket(e.d, grupo);
+    if(!porVB[e.vend][b]) porVB[e.vend][b]=contadorVazio();
+    if(!porB[b]) porB[b]=contadorVazio();
+    somarEvento(porV[e.vend], e); somarEvento(porVB[e.vend][b], e);
+    somarEvento(porB[b], e); somarEvento(total, e);
+  });
+  fecharContador(total);
+  Object.keys(porV).forEach(function(v){ fecharContador(porV[v]);
+    Object.keys(porVB[v]).forEach(function(b){ fecharContador(porVB[v][b]); }); });
+  Object.keys(porB).forEach(function(b){ fecharContador(porB[b]); });
+
+  var linhas = reps.filter(function(p){ return !p.inativo || porV[p.id].toques>0; })
+    .map(function(p){ return {p:p, c:porV[p.id]}; })
+    .sort(function(a,b){ return b.c.toques-a.c.toques || b.c.reunioes-a.c.reunioes || a.p.nome.localeCompare(b.p.nome,"pt"); });
+  var top = linhas.length && linhas[0].c.toques ? linhas[0] : null;
+  var nDias = diasEntre(per.ini, per.fim);
+  var ativosN = ativos().length;
+  var metaDia = ativos().reduce(function(a,p){ return a+(p.cota||50); },0);
+
+  var subPer = dataBR(per.ini)+(per.ini!==per.fim?" a "+dataBR(per.fim):"")+" · "+nDias+" dia(s)";
+  var stTop = stat("Mais ativo", top?top.p.nome:"—", top?(top.c.toques+" toques · "+top.c.dias+" dia(s) ativo(s)"):"ninguém marcou nada");
+  stTop.querySelector(".v").style.fontSize="19px";
+  main.appendChild(el("div",{class:"stats"},[
+    stat("Toques no período", String(total.toques), subPer),
+    stat("Leads trabalhados", String(total.leads), total.contatos+" primeiro(s) contato(s)"),
+    stat("Respostas", String(total.respostas), total.leads?Math.round(total.respostas/total.leads*100)+"% dos leads trabalhados":"—"),
+    stat("Reuniões · fechados", total.reunioes+" · "+total.fechados, "R$ "+(total.fechados*TICKET).toLocaleString("pt-BR")+"/mês fechado"),
+    stTop
+  ]));
+
+  /* --- grade vendedor x periodo --- */
+  var pg = el("div",{class:"panel"},[
+    el("h2",{text:"Por vendedor e "+(grupo==="dia"?"dia":grupo==="semana"?"semana":"mês")}),
+    el("p",{class:"hint",text:"Cada célula é a métrica escolhida acima naquele corte. Quanto mais escura, mais movimento. A última linha soma o time; a última coluna soma o período."})
+  ]);
+  var metrica = HV.metrica;
+  var maxCel = 1;
+  linhas.forEach(function(x){ buckets.forEach(function(b){ var c=porVB[x.p.id][b]; if(c && c[metrica]>maxCel) maxCel=c[metrica]; }); });
+  function cel(val, forte){
+    var pct = val?Math.max(12,Math.round(val/maxCel*100)):0;
+    return el("td",{class:"num",style:(val?"background:color-mix(in srgb, var(--accent) "+Math.round(pct*0.55)+"%, transparent);":"color:var(--text-3);")+(forte?"font-weight:600":""),
+      text:val?String(val):"·"});
+  }
+  var tb = el("table",{style:"min-width:"+(240+buckets.length*62)+"px"});
+  var cab = [el("th",{text:"Vendedor"})];
+  buckets.forEach(function(b){ cab.push(el("th",{class:"num",text:rotuloBucket(b,grupo)})); });
+  cab.push(el("th",{class:"num",text:"Total"}));
+  tb.appendChild(el("thead",{},[el("tr",{},cab)]));
+  var tbody = el("tbody");
+  linhas.forEach(function(x){
+    var tds=[el("td",{},[el("div",{style:"display:flex;align-items:center;gap:8px;white-space:nowrap"},[
+      el("span",{class:"av",style:"background:"+corDe(x.p.id)+";width:22px;height:22px;font-size:9.5px"+(x.p.inativo?";opacity:.6":""),text:iniciais(x.p.nome)}),
+      el("span",{},[el("div",{style:"font-weight:600",text:x.p.nome}),
+        x.p.inativo?el("div",{style:"font-size:11px;color:var(--text-3)",text:"saiu do time"}):null])])])];
+    buckets.forEach(function(b){ var c=porVB[x.p.id][b]; tds.push(cel(c?c[metrica]:0,false)); });
+    tds.push(el("td",{class:"num",style:"font-weight:700",text:String(x.c[metrica])}));
+    tbody.appendChild(el("tr",{},tds));
+  });
+  var tdsT=[el("td",{style:"font-weight:700",text:"Time"})];
+  buckets.forEach(function(b){ tdsT.push(el("td",{class:"num",style:"font-weight:700;border-top:2px solid var(--line)",text:String(porB[b]?porB[b][metrica]:0)})); });
+  tdsT.push(el("td",{class:"num",style:"font-weight:700;border-top:2px solid var(--line)",text:String(total[metrica])}));
+  tbody.appendChild(el("tr",{},tdsT));
+  tb.appendChild(tbody);
+  pg.appendChild(el("div",{class:"tablewrap"},[tb]));
+  if(!noPeriodo.length) pg.appendChild(el("div",{class:"empty",text:"Nenhum toque registrado neste período."}));
+  pg.appendChild(el("div",{class:"acts",style:"margin-top:10px"},[
+    el("button",{class:"btn",onclick:function(){
+      var t=["Vendedor"].concat(buckets.map(function(b){return rotuloBucket(b,grupo)}),["Total"]).join("\t")+"\n";
+      linhas.forEach(function(x){ t+=[x.p.nome].concat(buckets.map(function(b){var c=porVB[x.p.id][b];return c?c[metrica]:0}),[x.c[metrica]]).join("\t")+"\n"; });
+      t+=["Time"].concat(buckets.map(function(b){return porB[b]?porB[b][metrica]:0}),[total[metrica]]).join("\t")+"\n";
+      copiar(t);
+    }},[document.createTextNode("Copiar tabela (cola direto na planilha)")])
+  ]));
+  main.appendChild(pg);
+
+  /* --- detalhe por vendedor no periodo --- */
+  var pd = el("div",{class:"panel"},[
+    el("h2",{text:"Detalhe do período por vendedor"}),
+    el("p",{class:"hint",text:"Ordenado por toques. 'Dias ativos' é em quantos dias do período a pessoa marcou alguma coisa; a média é toques por dia ativo. A cota é "+(ativosN?Math.round(metaDia/ativosN):50)+" contatos/dia por vendedor."})
+  ]);
+  var td2 = el("table");
+  td2.appendChild(el("thead",{},[el("tr",{},[
+    el("th",{text:"Vendedor"}),el("th",{class:"num",text:"Toques"}),el("th",{class:"num",text:"Leads"}),
+    el("th",{class:"num",text:"1º contato"}),el("th",{class:"num",text:"Follow-ups"}),el("th",{class:"num",text:"Respostas"}),
+    el("th",{class:"num",text:"Reuniões"}),el("th",{class:"num",text:"Fechados"}),el("th",{class:"num",text:"Sem interesse"}),
+    el("th",{class:"num",text:"Dias ativos"}),el("th",{class:"num",text:"Média/dia"})
+  ])]));
+  var tb2 = el("tbody");
+  linhas.forEach(function(x){
+    var c=x.c;
+    tb2.appendChild(el("tr",{},[
+      el("td",{},[el("div",{style:"display:flex;align-items:center;gap:8px;white-space:nowrap"},[
+        el("span",{class:"av",style:"background:"+corDe(x.p.id)+";width:22px;height:22px;font-size:9.5px",text:iniciais(x.p.nome)}),
+        el("span",{style:"font-weight:600",text:x.p.nome})])]),
+      el("td",{class:"num",style:"font-weight:700",text:String(c.toques)}),
+      el("td",{class:"num",text:String(c.leads)}),
+      el("td",{class:"num",text:String(c.contatos)}),
+      el("td",{class:"num",text:String(c.followups)}),
+      el("td",{class:"num",text:String(c.respostas)}),
+      el("td",{class:"num",style:c.reunioes?"color:var(--ok);font-weight:600":"",text:String(c.reunioes)}),
+      el("td",{class:"num",style:c.fechados?"color:var(--ok);font-weight:600":"",text:String(c.fechados)}),
+      el("td",{class:"num",text:String(c.perdidos)}),
+      el("td",{class:"num",text:c.dias+"/"+nDias}),
+      el("td",{class:"num",text:c.dias?c.mediaDia.toFixed(1):"—"})
+    ]));
+  });
+  td2.appendChild(tb2);
+  pd.appendChild(el("div",{class:"tablewrap"},[td2]));
+  main.appendChild(pd);
+
+  /* --- de onde vem o numero --- */
+  var reais = evs.filter(function(e){ return e.real; }).length, sint = evs.length-reais;
+  var desde=""; evs.forEach(function(e){ if(e.real && (!desde || e.ts<desde)) desde=e.ts; });
+  var pf = el("div",{class:"panel"});
+  pf.appendChild(el("p",{class:"hint",style:"margin:0",html:
+    "<b>De onde vem o número:</b> "+reais+" toque(s) registrado(s) na tabela de histórico"+(desde?" desde "+dataBR(desde.slice(0,10)):"")+
+    (sint?", mais "+sint+" marcação(ões) sem registro contadas pela data da última marcação":"")+
+    ". Cada clique de classificação vira um registro novo; nada é sobrescrito."+
+    (HIST.lidoAs?" Lido às "+HIST.lidoAs+".":"")+(FILA_H.length?" <b>"+FILA_H.length+" toque(s) desta máquina ainda não subiram.</b>":"")}));
+  pf.appendChild(el("div",{class:"acts",style:"margin-top:10px"},[
+    el("button",{class:"btn",onclick:function(){ HIST.linhas=null; escoarH(); sincronizar().then(function(){ render(); }); }},[document.createTextNode("Reler agora")])
+  ]));
+  main.appendChild(pf);
+}
+
 /* ---------- boot ---------- */
 READY = true;
 lerFila();
+lerFilaH();
 lerEspelho();
 
 function restaurarVend(){
@@ -2303,8 +2696,10 @@ restaurarVend();
 render();
 
 function sincronizar(){
-  return carregarNuvem().then(function(ok){
-    if(ok && !digitando()) render(); else pintarSync();
+  var hist = (STATE.vend && STATE.vend.gestor && STATE.view==="historico") ? carregarHistorico() : Promise.resolve(false);
+  return Promise.all([carregarNuvem(), hist]).then(function(r){
+    var ok = r[0];
+    if((ok || r[1]) && !digitando()) render(); else pintarSync();
     return ok;
   });
 }
@@ -2314,8 +2709,8 @@ carregarLeadsNuvem().then(function(trocou){
 });
 
 if(typeof window !== "undefined"){
-  window.addEventListener("online", function(){ escoar(); });
-  setInterval(function(){ if(FILA.length) escoar(); }, 20000);
+  window.addEventListener("online", function(){ escoar(); escoarH(); });
+  setInterval(function(){ if(FILA.length) escoar(); if(FILA_H.length) escoarH(); }, 20000);
   /* se a pagina passar a virada do dia aberta, o contador de hoje vira junto */
   setInterval(function(){
     var h = dataLocal();
