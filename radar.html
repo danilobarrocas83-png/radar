@@ -586,110 +586,117 @@ function verboDoNicho(nicho){
 var PLACEHOLDER_OBS="[OBSERVAÇÃO — abra “Ver o que ele roda hoje” e descreva em uma frase o que está errado]";
 function obsOu(l){ return observacaoDe(l)||PLACEHOLDER_OBS; }
 
-/* ---------- Mensagem 1: a original dos prints, sem mexer ----------
-   O vendedor pede licenca pra uma pergunta. Nao vende. */
+/* ---------- v4 (14/09): o fluxo montado com o Danilo ----------
+   Regras desta versao:
+   - NUNCA dizer que o anuncio tem erro, defeito ou problema. Nada de print.
+   - A pergunta das objecoes vai na propria abertura (uma so, pra todo nicho).
+   - Sem "sem compromisso": o convite mostra experiencia (funil, remarketing,
+     lead barato nem sempre e lead bom) e diz que a agenda do Danilo e apertada.
+   - Reuniao = 20 minutos pra apresentar estrategias novas e ver se faz
+     sentido investir e contratar um gestor de trafego. Sempre mandar o site.
+   - Nao insistir com "a gente faz por dentro", "nao e prioridade" e
+     "ta vindo bem". */
+var SITE_DANILO="https://danilobarrocass.netlify.app/";
+
+/* Abertura no WhatsApp: apresenta, elogia, apresenta o Danilo e ja pergunta. */
 function msgWhats(l,vendNome){
   var an=anuncioDe(l.nicho), eu=nomeReal(vendNome);
   return "Oi, tudo bem? Aqui é o "+eu+".\n\n"+
-         "Vi "+an+" aqui no Instagram e parei pra olhar com calma — "+l.empresa+", certo?\n\n"+
+         "Vi "+an+" aqui no Instagram, parei pra olhar com calma e achei que o perfil tem bastante potencial.\n\n"+
          "Trabalho junto com o Danilo — "+QUEM_E_DANILO+".\n\n"+
-         "Posso te fazer uma pergunta rápida sobre a campanha de vocês?";
+         "Deixa eu te perguntar: hoje, quem chega pelo anúncio, o que mais acontece — pergunta o preço e some, ou nem é o cliente que vocês querem?";
 }
 /* Direct: mais curta, no Instagram mensagem longa nao e lida. */
 function msgDirect(l,vendNome){
   var an=anuncioDe(l.nicho), eu=nomeReal(vendNome);
-  return "Oi, tudo bem? Aqui é o "+eu+". Vi "+an+" aqui no Instagram.\n\n"+
-         "Trabalho com o Danilo, que é especialista em tráfego pago e ajuda empresas a venderem mais com anúncio online.\n\n"+
-         "Posso te fazer uma pergunta rápida sobre a campanha de vocês?";
-}
-/* Caiu na recepcao ("sobre o que?", "quem e?"): pede o caminho ate quem decide. */
-function txtRecepcaoQuem(l){
-  var qc=quemCuida(l);
-  return "É rapidinho: vi o anúncio de vocês e queria fazer uma pergunta pra quem cuida da campanha — é "+(qc?qc:"o dono")+" mesmo ou alguém do marketing? Se puder me passar o contato, eu falo direto com a pessoa e não tomo seu tempo.";
+  return "Oi, tudo bem? Aqui é o "+eu+", trabalho com o Danilo — especialista em tráfego pago, ajuda empresas a venderem mais com anúncio online. Vi "+an+" aqui e achei que o perfil tem bastante potencial.\n\n"+
+         "Deixa eu te perguntar: quem chega pelo anúncio, pergunta o preço e some, ou nem é o cliente que vocês querem?";
 }
 
-/* ---------- depois da resposta dele: validar em uma linha e convidar ---------- */
-var TXT_CONFIRMOU="Pois é, é o mais comum nesse ramo — e quase sempre não é o Instagram, é como a campanha tá montada.\n\n"+FECHAMENTO;
-function txtNormal(l){
-  return "É normal mesmo — mas não precisa ser. Quando a campanha tá bem montada, chega menos curioso e mais gente que já vem pronta pra "+verboDoNicho(l.nicho)+". É isso que o Danilo ajusta.\n\n"+
-         "Se quiser, ele te mostra o que dá pra mexer aí. São uns 20 minutinhos, sem compromisso nenhum — é mais pra você entender o projeto e ver se faz sentido pra vocês. Fica melhor pra você amanhã de manhã ou de tarde?";
-}
-var TXT_VINDO_BEM="Que bom — então vocês estão na frente da maioria que anuncia. Aí o que o Danilo faz é uma segunda leitura de fora pra escalar o que já tá funcionando, sem mexer no que dá certo.\n\n"+
-  "São 20 minutinhos, sem compromisso. Se não fizer sentido agora, de boa — fica melhor amanhã de manhã ou de tarde, ou prefere que eu te procure mais pra frente?";
-var TXT_DEPENDE="Entendi. E hoje o que pesa mais: chega pouca gente, ou chega gente e não fecha?";
-function txtPeso(l){
-  return "Inclusive, olhando o anúncio de vocês reparei que "+obsOu(l)+". Isso é configuração, e costuma ser parte do motivo. Te mando o print se quiser.";
-}
+/* ---------- depois da resposta dele: validar e convidar na mesma mensagem ----------
+   O bloco do convite e identico nas duas saidas: e o que o vendedor decora. */
+var CONVITE="O Danilo te mostra isso na prática: abre a campanha de vocês na tela, te fala o que faria diferente e mostra exemplos de clientes que ele atende e que aumentaram o faturamento. São 20 minutos, direto ao ponto. A agenda dele é apertada, por isso eu já deixo reservado — fica melhor pra você amanhã de manhã ou de tarde?";
+var TXT_PRECO_SOME="Pois é, é o mais comum nesse ramo — e quase sempre não é o Instagram, é como a campanha tá montada: do jeito que tá, ela chama quem só quer saber preço.\n\n"+
+  "Tráfego não é turbinar post. É funil, é remarketing, é saber que conversa barata nem sempre é cliente bom — às vezes o anúncio que mais gera contato é justamente o que mais enche o WhatsApp de curioso.\n\n"+CONVITE;
+var TXT_CLIENTE_ERRADO="Entendi — então o anúncio tá chegando na pessoa errada. Isso quase sempre é público e funil, não é o anúncio em si.\n\n"+
+  "Tráfego não é turbinar post. É funil, é remarketing, é saber que contato barato nem sempre é cliente bom — cliente errado sai caro mesmo quando a conversa custa pouco.\n\n"+CONVITE;
+/* "Ta vindo bem": termina na primeira frase, sem convite. Se ele engatar, o vendedor convida. */
+var TXT_VINDO_BEM="Que bom — então vocês estão na frente da maioria que anuncia. Aí o que o Danilo faz é uma segunda leitura de fora pra escalar o que já tá funcionando, sem mexer no que dá certo.";
 
-/* ---------- marcando a reuniao: o que faltou nos prints ---------- */
-var TXT_PROPOS_DIA="Dá certo sim! De manhã ou de tarde? Me fala um horário que eu já deixo reservado com o Danilo.";
-var TXT_FECHAR_AGENDA="Fechado então: [dia, data], às [hora]. O Danilo te chama nesse número, por chamada de vídeo — são uns 20 minutos, ele abre a campanha de vocês na tela e te mostra o que ajustaria.\n\n"+
-  "Se precisar mudar, me avisa por aqui que eu ajusto. Combinado?";
-var TXT_VAGO="Fechado! Pra eu já deixar reservado com o Danilo: [segunda] ou [terça]? De manhã ou de tarde?";
-var TXT_VAGO_FUP="Oi, [Nome]! Só pra deixar marcado com o Danilo: fica melhor [terça] de manhã ou de tarde?";
-var TXT_VESPERA="Oi, [Nome], tudo bem? Passando só pra confirmar nossa conversa com o Danilo amanhã às [hora]. Tá de pé?";
-var TXT_1H="Oi, [Nome]! Daqui a pouco, às [hora], o Danilo te chama nesse número. Qualquer coisa me avisa por aqui. 👍";
-var TXT_REMARCAR="Sem problema nenhum! Fica melhor [quarta] ou [quinta]? De manhã ou de tarde? Já ajusto com o Danilo.";
-var TXT_OQUE_E="É uma chamada de 20 minutos: o Danilo abre a campanha de vocês na tela e te mostra o que ele ajustaria — sem apresentação, sem proposta. Você sai sabendo o que tá travando, mesmo que não feche nada com a gente.";
-var TXT_DEPOIS_MARCOU="1. Clique em REUNIÃO MARCADA.\n2. Escreva na anotação: dia, hora, com quem, e o que ele respondeu (ex.: “15/09 14h · dono: Marcelo · chega gente e não aparece na loja”). É daí que o Radar te lembra na véspera e no dia.\n3. Mande o resumo pro Danilo hoje: Resumo do dia → Mandar direto pro Danilo.\n4. Véspera e uma hora antes: os dois toques de confirmação.";
+/* ---------- marcando a reuniao: duas opcoes, nunca pergunta aberta ---------- */
+var TXT_PROPOS_DIA="Fechado, [segunda] então. De manhã ou de tarde? Me fala um horário que eu já reservo com o Danilo.";
+var TXT_FECHAR_AGENDA="Reservado: [segunda], [21/09], às [14h]. O Danilo te chama nesse número, por chamada de vídeo. Em 20 minutos ele abre a campanha de vocês na tela e te mostra o que ajustaria.\n\n"+
+  "Vale separar esse horário mesmo, porque a agenda dele é apertada e eu já tirei esse espaço pra você. Se precisar mudar, me avisa por aqui antes que eu remanejo. Combinado?";
+var TXT_VAGO="Fechado! Pra eu já garantir o espaço com o Danilo: [segunda] ou [terça]? De manhã ou de tarde?";
+var TXT_VAGO_FUP="Oi, [Nome]! Só pra deixar reservado com o Danilo — o horário de [terça] ainda tá em aberto, mas não por muito tempo. De manhã ou de tarde?";
+var TXT_VESPERA="Oi, [Nome], tudo bem? Passando pra confirmar a conversa com o Danilo amanhã, às [hora], por chamada de vídeo nesse número.\n\n"+
+  "Me confirma com um “ok”? Se não for dar, me fala hoje que eu remarco.";
+var TXT_1H="Oi, [Nome]! Daqui a pouco, às [hora], o Danilo te chama nesse número por vídeo. Se puder, fica na frente do computador: ele vai abrir a campanha de vocês na tela. 👍";
+var TXT_DIA_SEM_RESPOSTA="Oi, [Nome]! Nossa conversa com o Danilo é hoje às [hora]. Tá de pé? Se precisar mudar, me fala agora que eu ajusto.";
+var TXT_REMARCAR="Sem problema. [Quarta] ou [quinta]? De manhã ou de tarde? Já reservo com o Danilo de novo.";
+var TXT_NAO_APARECEU="Oi, [Nome]. O Danilo te chamou às [hora] e não conseguiu falar com você — acontece. Quer que eu remarque? [Quinta] ou [sexta], de manhã ou de tarde?";
+var TXT_OQUE_E="É uma chamada de vídeo de 20 minutos: o Danilo abre a campanha de vocês na tela e apresenta estratégias novas, com exemplos de clientes que ele atende. Você sai sabendo o que ele faria diferente — e se faz sentido investir num gestor de tráfego.";
+var TXT_DEPOIS_MARCOU="1. Clique em REUNIÃO MARCADA.\n2. Escreva na anotação: dia, hora, com quem, e o que ele respondeu (ex.: “21/09 14h · dono: Marcelo · chega gente que pergunta preço e some”). É daí que o Radar te lembra na véspera e no dia.\n3. Mande o resumo pro Danilo hoje: Resumo do dia → Mandar direto pro Danilo.\n4. Véspera e uma hora antes: os dois toques de confirmação.";
 
-/* ---------- recepcao e objecoes (da v2, continuam valendo) ---------- */
+/* ---------- caiu na recepcao: apresenta tudo, e o contato so no fim ---------- */
+function txtRecepcaoQuem(l,vendNome){
+  var eu=nomeReal(vendNome);
+  return "Sou o "+eu+", trabalho junto com o Danilo — "+QUEM_E_DANILO+". O site dele, pra vocês conhecerem o trabalho: "+SITE_DANILO+"\n\n"+
+         "Vi o anúncio de vocês no Instagram. Hoje, quem chega por ele, o que mais acontece — pergunta o preço e some, ou nem é o cliente que vocês querem?\n\n"+
+         "O Danilo apresenta estratégias novas pra isso numa reunião de 20 minutos — mas precisa ser com quem investe no tráfego, quem paga a campanha, porque é essa pessoa que vai decidir se faz sentido. Consegue me passar o contato dela, ou encaminhar pra ela?";
+}
 function txtRecepcaoEncaminha(vendNome){
-  return "Perfeito, obrigado! Pra facilitar, segue o print do que eu vi 👇\n\n[print]\n\n"+
-         "Se a pessoa preferir, pode me chamar direto aqui — é coisa de dois minutos. Meu nome é "+nomeReal(vendNome)+".";
+  return "Perfeito, obrigado! Se a pessoa preferir, pode me chamar direto aqui — meu nome é "+nomeReal(vendNome)+". É pra marcar os 20 minutos com o Danilo e ver se faz sentido investir e trazer um gestor de tráfego novo.";
 }
-function txtRecepcaoEmail(l){
-  var qc=quemCuida(l);
-  return "Mando sim, agora. Esse e-mail vai direto pra "+(qc?qc.replace(/^(a|o) /,""):"quem cuida do marketing")+" ou é o geral da empresa? Pergunto pra não se perder no meio — é um print e três linhas, nada longo.";
-}
+var TXT_RECEPCAO_EMAIL="Mando sim, agora. Esse e-mail vai direto pra quem investe no tráfego ou é o geral da empresa? Pergunto pra não se perder no meio — são três linhas e o site do Danilo.";
 function txtEmail(l,vendNome){
   var qc=quemCuida(l), eu=nomeReal(vendNome);
   var trat=qc?qc.replace(/^(a|o) /,""):"Olá";
-  return "Assunto: Detalhe no anúncio da "+l.empresa+" (print)\n\n"+
+  return "Assunto: Anúncio da "+l.empresa+" no Instagram — 20 minutos com o Danilo\n\n"+
          trat+", boa tarde. Meu nome é "+eu+", falei com a recepção hoje.\n\n"+
-         "Vi o anúncio da "+l.empresa+" rodando no Instagram e reparei num detalhe de configuração: "+obsOu(l)+". Segue o print em anexo. É rápido de corrigir, mas do jeito que está, quem vê o anúncio não entende o que fazer.\n\n"+
-         "Trabalho com o Danilo, especialista em tráfego pago e estrategista digital. Se fizer sentido, ele olha o resto da campanha numa chamada de 20 minutos e diz o que ajustaria — sem compromisso. Meu WhatsApp é [seu número].\n\n"+eu;
+         "Trabalho junto com o Danilo, especialista em tráfego pago e estrategista digital — ele ajuda empresas a venderem mais com anúncio online. O site dele, pra conhecer o trabalho: "+SITE_DANILO+"\n\n"+
+         "Vi o anúncio da "+l.empresa+" rodando no Instagram. O que o Danilo mais ouve de quem anuncia é: chega contato, mas é gente que pergunta preço e some, ou que nem é o cliente certo. Se é o que acontece aí, vale a conversa.\n\n"+
+         "São 20 minutos por vídeo com quem investe no tráfego: ele apresenta estratégias novas pra campanha de vocês, com exemplos de clientes que ele atende, e vocês avaliam se faz sentido investir e trazer um gestor de tráfego novo.\n\n"+
+         "Me responde aqui ou no WhatsApp [seu número] com um dia e período (manhã ou tarde) que eu reservo com ele.\n\n"+eu;
 }
-var TXT_RECEPCAO_SEM_INTERESSE="Entendo! Só que não é oferta — é um erro na configuração de um anúncio que vocês estão pagando. Se puder encaminhar o print pra quem cuida, ela decide. Obrigado! 👇\n\n[print]";
-var TXT_RECEPCAO_FUP="Oi! A pessoa chegou a ver o print? Se for mais fácil, me passa o e-mail dela direto que eu mando por lá.";
-function txtJaTem(l){
-  return "Que bom — então tem quem corrija. Não vim tomar o lugar de ninguém, sério.\n\n"+
-         "Só te aviso porque, mesmo com alguém cuidando, esse detalhe passou: "+obsOu(l)+". Vale pedir pra conferirem, é rápido.\n\n"+
-         "E se um dia quiser uma segunda opinião de fora, o Danilo faz isso numa boa — 20 minutinhos, ele te fala o que faria diferente, sem compromisso nenhum.";
-}
-var TXT_FAZ_INTERNO="Entendi, faz sentido — e é bom que o lead chega em você direto.\n\n"+
-  "Então a pergunta é uma só: o retorno tá no nível que vocês esperam? Se tá, ótimo: corrige esse detalhe e segue. Se não tá, uma leitura de fora costuma achar o que quem tá dentro não vê — o Danilo faz isso em 20 minutinhos, sem compromisso.";
-function txtSemInteresse(l){
-  return "Tranquilo, não vou insistir!\n\n"+
-         "Só te deixo o print pra você corrigir mesmo sem a gente — é rápido: "+obsOu(l)+" 👇\n\n[print]\n\n"+
-         "Se um dia quiser que o Danilo olhe o resto, é só me chamar. Boa semana!";
-}
+var TXT_RECEPCAO_SEM_INTERESSE="Entendo! Obrigado pela resposta. 🙂";
+var TXT_RECEPCAO_FUP="Oi! A pessoa chegou a ver o recado? Se for mais fácil, me passa o e-mail ou o WhatsApp dela direto que eu falo por lá.";
+
+/* ---------- objecoes ---------- */
+var TXT_JA_TEM="Que bom, então tem quem cuide. Não vim tomar o lugar de ninguém.\n\n"+
+  "Só uma pergunta, pra eu não te incomodar à toa: o retorno tá no nível que vocês esperam? Se tá, ótimo. Se não tá, uma segunda opinião de fora costuma enxergar o que quem tá dentro não vê — o Danilo faz isso em 20 minutos, apresenta estratégias novas e você compara. Amanhã de manhã ou de tarde?\n\n"+
+  "O site dele, pra conhecer o trabalho: "+SITE_DANILO;
+/* Quem fala "a gente faz por dentro" e alguem da equipe: insistir soa como tirar o lugar dele. */
+var TXT_FAZ_INTERNO="Entendi, faz sentido. Obrigado pela resposta! 🙂";
+var TXT_SEM_INTERESSE="Tranquilo, não vou insistir. Obrigado pela resposta! 🙂\n\n"+
+  "Se um dia quiser que o Danilo olhe a campanha de vocês, é só me chamar aqui. O site dele, pra conhecer o trabalho: "+SITE_DANILO;
 var TXT_AGRADECEU="De nada! Posso te perguntar uma coisa só, pra eu não te incomodar à toa depois? O “não é o momento” é porque o anúncio tá dando retorno bom, ou porque não é prioridade agora?";
-var TXT_NAO_PRIORIDADE="Então vale mais ainda os 20 minutos — é justamente pra não ficar pagando por algo que não é prioridade. Amanhã de manhã ou de tarde?";
-var TXT_PROPOSTA="Mando sim — mas te falo na real: proposta com valor quem monta é o Danilo, depois de olhar a campanha de vocês, senão vai número errado e vocês decidem em cima de chute.\n\n"+
-  "O que eu te mando agora é curto: o print, o que esse detalhe tá custando, e a sugestão dos 20 minutos com ele. Aí quem decide entra na chamada se quiser — é o jeito mais rápido de ter uma proposta de verdade. Amanhã de manhã ou de tarde?";
+var TXT_NAO_PRIORIDADE="Entendi, obrigado! Quando virar prioridade, me chama aqui que eu reservo com o Danilo. 🙂";
+var TXT_PROPOSTA="Mando sim — mas te falo na real: proposta com valor quem monta é o Danilo, depois de entender a campanha de vocês, senão vai número errado e vocês decidem em cima de chute.\n\n"+
+  "O que eu te mando agora é o site dele, pra você conhecer o trabalho: "+SITE_DANILO+"\n\n"+
+  "E os 20 minutos existem justamente pra isso: ele apresenta as estratégias, entende o que vocês precisam, e a proposta sai certa. Amanhã de manhã ou de tarde?";
 var TXT_PENSAR="Claro, sem pressa. Só pra eu te ajudar direito: o que te deixa em dúvida — é valor, é se dá resultado, ou é o momento mesmo?";
-function txtQueimou(){
-  return "Entendi — e é chato mesmo. Posso te perguntar o que aconteceu? Investiu e não veio retorno, ou veio gente errada?\n\n"+
-         "Pergunto porque quase sempre o problema não é o Instagram, é como a campanha foi montada. O Danilo pega muito caso assim. Se quiser entender o que deu errado, são 20 minutinhos, sem compromisso.";
-}
-var TXT_PRECO="Quem passa valor é o Danilo, porque muda bastante conforme o que a empresa precisa e eu não quero te falar número errado.\n\n"+
-  "Mas pra você não perder tempo comigo: fica mais ou menos na faixa de contratar um funcionário CLT — só que esse não falta, não tira férias e trabalha os sete dias.\n\n"+
-  "Se isso couber pra vocês, marco os 20 minutinhos com ele e você vê o projeto por dentro. Amanhã de manhã ou de tarde?";
+var TXT_PENSAR_RESULTADO="Os 20 minutos são exatamente pra isso: ele te mostra as estratégias na prática e exemplos de clientes que ele atende, e aí você decide com base no que viu. Amanhã de manhã ou de tarde?";
+var TXT_PENSAR_MOMENTO="Entendi, obrigado! Quando for a hora, me chama aqui que eu reservo com o Danilo. 🙂";
+var TXT_QUEIMOU="Entendi — e é chato mesmo. Posso te perguntar o que aconteceu? Investiu e não veio retorno, ou veio gente errada?\n\n"+
+  "Pergunto porque quase sempre o problema não é o Instagram, é como a campanha foi montada — funil, público, remarketing. O Danilo pega muito caso assim. Se quiser entender o que deu errado e ver estratégias novas, são 20 minutos. Amanhã de manhã ou de tarde?\n\n"+
+  "O trabalho dele, pra você conhecer: "+SITE_DANILO;
+var TXT_PRECO="Quem passa valor é o Danilo, porque muda conforme o que a empresa precisa e eu não quero te falar número errado.\n\n"+
+  "Mas pra você ter uma ideia: fica na faixa de contratar um funcionário CLT. Só que esse não fica no balcão esperando cliente entrar — ele sai pra buscar. É mídia: o dinheiro vira gente vendo a sua empresa e chegando no seu WhatsApp, e de quebra a sua marca ganha autoridade. Investimento que volta, não custo.\n\n"+
+  "Se isso couber pra vocês, marco os 20 minutos com ele: ele apresenta as estratégias e você vê o projeto por dentro. Amanhã de manhã ou de tarde?";
 var TXT_PARAR="Tranquilo, desculpa incomodar. Boa semana!";
 
-/* ---------- follow-ups ---------- */
-function txtFup1(l){
-  return "Oi, [Nome]! Passando pra retomar. Dei uma olhada na campanha de vocês e reparei que "+obsOu(l)+" — te mando o print se quiser.\n\n"+
-         "Isso é configuração, não é o anúncio em si, e costuma derrubar o retorno sem ninguém perceber. Se quiser, o Danilo te mostra como ajustar em 20 minutinhos, sem compromisso. Fica melhor amanhã de manhã ou de tarde?";
+/* ---------- silencio: dois toques depois da abertura, e um pra quem sumiu ---------- */
+function txtFup1(vendNome){
+  return "Oi, tudo bem? Sou o "+nomeReal(vendNome)+" de novo, do time do Danilo. Passando pra retomar a pergunta: hoje, quem chega pelo anúncio de vocês, pergunta o preço e some, ou nem é o cliente que vocês querem?\n\n"+
+         "É a queixa mais comum de quem investe em tráfego, e é justamente nisso que o Danilo trabalha. Se fizer sentido, ele apresenta estratégias novas pra campanha de vocês numa reunião de 20 minutos. Amanhã de manhã ou de tarde?\n\n"+
+         "Pra conhecer o trabalho dele: "+SITE_DANILO;
 }
-var TXT_FUP1_SETUP="Oi, [Nome]! Passando só pra não deixar sumir aqui no meio das mensagens.\n\n"+
-  "Se o anúncio de vocês tá dando o retorno que vocês querem, ignora de boa. Se não tá, o Danilo faz uma leitura de fora em 20 minutinhos, sem compromisso — fica melhor amanhã de manhã ou de tarde?";
 var TXT_FUP2="Oi! Última vez que te chamo, prometo.\n\n"+
-  "Se o anúncio de vocês tá dando o retorno que vocês querem, ignora essa mensagem de boa — sério.\n\n"+
-  "Se não tá, 20 minutos com o Danilo mostram onde tá o vazamento. É só me falar um dia e horário que eu marco.";
+  "Se o anúncio de vocês tá trazendo o cliente certo e fechando, ignora essa mensagem de boa — sério.\n\n"+
+  "Se tá vindo contato que pergunta preço e some, 20 minutos com o Danilo valem a pena: ele apresenta estratégias novas e você vê se faz sentido investir num gestor de tráfego. Me fala um dia e se prefere manhã ou tarde que eu reservo.";
 var TXT_SUMIU="Oi, [Nome]! Ficou alguma dúvida do que te falei?\n\n"+
-  "Se for questão de momento, me fala que eu te procuro mais pra frente, sem problema. Se for dúvida do que o Danilo faz, os 20 minutinhos são exatamente pra isso — não tem nada pra decidir antes. Amanhã de manhã ou de tarde?";
+  "Se for questão de momento, me fala que eu te procuro mais pra frente. Se for dúvida do que o Danilo faz, dá uma olhada no site dele — e os 20 minutos são exatamente pra ele te mostrar as estratégias na prática. Amanhã de manhã ou de tarde?\n\n"+SITE_DANILO;
 
 /* ---------- reuniao marcada: dia e hora saem da anotacao ----------
    A tabela atividade nao tem coluna pra isso; o vendedor escreve
@@ -715,120 +722,112 @@ var LEAD_EXEMPLO={empresa:"Carros De March",nicho:"Automotivo",
 
 var BIBLIOTECA=[
  ["Seu papel aqui (leia antes de tudo)",
-  "Você não é o gestor de tráfego. Mas também não é pra soar como vendedor.\n\nSeu papel é de quem viu o anúncio da empresa, achou que dá pra ajudar, e conhece a pessoa certa pra isso — o Danilo.\n\nSeu trabalho termina quando você marca 20 minutinhos entre o dono e ele — com dia, hora e confirmação. Não quando manda muitas mensagens.",
-  "Quem chega vendendo levanta a guarda do outro lado na primeira linha. Quem chega pedindo licença pra uma pergunta mantém a conversa aberta. É a mesma intenção, com uma temperatura completamente diferente — e a temperatura é o que decide se ele responde."],
+  "Você não é o gestor de tráfego. Mas também não é pra soar como vendedor.\n\nSeu papel é de quem viu o anúncio da empresa, achou que tem potencial, e conhece a pessoa certa pra isso — o Danilo.\n\nSeu trabalho termina quando você marca 20 minutos entre quem paga a campanha e o Danilo — com dia, data, hora e confirmação. Não quando manda muitas mensagens.",
+  "A reunião precisa ser com quem investe no tráfego: é essa pessoa que decide se faz sentido investir e trazer um gestor de tráfego novo. Marcar com quem não decide é reunião perdida."],
 
- ["A sequência que rendeu as primeiras reuniões",
-  "1. Mensagem 1 (a original). Ele libera: “pode”, “boa tarde”, “diga”.\n2. Só a pergunta do nicho dele. Nada junto.\n3. Ele responde: “sim” / “normal né” / “tá vindo bem” / “depende”. Cada uma tem uma resposta pronta no cartão.\n4. Convite de 20 minutinhos, terminando SEMPRE com duas opções: “amanhã de manhã ou de tarde?”\n5. Ele propõe dia → você pede manhã ou tarde → ele dá a hora → você fecha com dia, data, hora e como o Danilo chama.\n6. Véspera e uma hora antes: confirmação.\n\nNos dois prints do Markus (Carros De March e Junqueira Imobiliária) o dono respondeu em menos de dois minutos a cada passo, e a reunião saiu em 50 minutos.",
-  "O que travou nos prints foi só o fim: “pode ser essa semana?” devolveu “semana que vem” sem dia; “qual horário fica melhor?” (pergunta aberta) custou oito minutos; e “vou encaminhar seu contato pro Danilo” não fixou dia, hora nem canal. Pergunta com duas opções recebe dia e hora; pergunta aberta recebe “depois te falo”."],
+ ["A sequência, passo a passo (fluxo de 14/09)",
+  "1. Abertura: quem você é, o anúncio, o Danilo, e a pergunta — “pergunta o preço e some, ou nem é o cliente que vocês querem?”. Tudo numa mensagem.\n2. Ele responde. Você valida em uma linha, explica em duas que tráfego não é turbinar post, e convida: 20 minutos, agenda apertada, “amanhã de manhã ou de tarde?”.\n3. Ele propõe dia → você pede manhã ou tarde → ele dá a hora → você fecha com dia, data, hora e canal, numa mensagem que fica salva na conversa dele.\n4. Véspera (peça o “ok”) e uma hora antes.\n\nTrês regras que valem em todas as etapas: nunca diga que o anúncio tem erro ou defeito (nada de print); nunca diga “sem compromisso”; e sempre deixe o site do Danilo quando a conversa desviar — "+SITE_DANILO,
+  "A pergunta descreve o que todo mundo que faz tráfego vive, então o dono reconhece na hora. E o convite mostra que o Danilo entende de funil, remarketing e de lead barato que não é lead bom — é isso que separa ele de quem “impulsiona post”."],
 
  ["Como falar — o tom certo",
-  "Nem formal demais, nem íntimo demais. Fale como você falaria com um conhecido de trabalho.\n\nPODE: \"oi, tudo bem?\", \"deixa eu te perguntar\", \"uma curiosidade\", \"sem compromisso nenhum\", \"20 minutinhos\", \"de manhã ou de tarde?\".\n\nEVITE: \"prezado\", \"venho por meio desta\", \"segue em anexo\", \"nossa solução\", \"potencializar resultados\", \"escalar seu faturamento\".\n\nEVITE TAMBÉM: encher de número e porcentagem. Você não é analista, é gente conversando. Se a pessoa quiser número, o Danilo mostra na reunião.",
+  "Nem formal demais, nem íntimo demais. Fale como você falaria com um conhecido de trabalho.\n\nPODE: \"oi, tudo bem?\", \"deixa eu te perguntar\", \"20 minutos\", \"de manhã ou de tarde?\", \"eu já deixo reservado\".\n\nEVITE: \"prezado\", \"venho por meio desta\", \"segue em anexo\", \"nossa solução\", \"potencializar resultados\", \"escalar seu faturamento\", \"lead desqualificado\".\n\nEVITE TAMBÉM: encher de número e porcentagem. Você não é analista, é gente conversando. Se a pessoa quiser número, o Danilo mostra na reunião.",
   "Linguagem corporativa cria distância e faz a mensagem parecer disparo automático. Excesso de métrica faz parecer auditoria. O ponto de equilíbrio é conversa de gente que entende do assunto — é isso que faz o dono responder no meio do dia corrido dele."],
 
  ["Quem é o Danilo (decore isso)",
-  "O Danilo é especialista em tráfego pago e estrategista digital. Ele ajuda empresas a venderem mais usando anúncio online.\n\nUse essa frase inteira quando falar dele. Não invente título, não fale \"agência\", não fale \"empresa de marketing\".",
+  "O Danilo é especialista em tráfego pago e estrategista digital. Ele ajuda empresas a venderem mais usando anúncio online.\n\nUse essa frase inteira quando falar dele. Não invente título, não fale \"agência\", não fale \"empresa de marketing\".\n\nO site dele, pra mandar sempre que a pessoa quiser conhecer o trabalho: "+SITE_DANILO,
   "Uma descrição só, sempre igual, dita com naturalidade. Quando cada vendedor apresenta o Danilo de um jeito, o posicionamento se dilui e a autoridade dele cai antes mesmo da reunião começar."],
 
- ["Mensagem 1 — WhatsApp (a original, sem mexer)",
+ ["Abertura — WhatsApp",
   msgWhats(LEAD_EXEMPLO,"Markus"),
-  "É a mensagem dos prints. “[Empresa], certo?” arranca o primeiro sim; “posso te fazer uma pergunta rápida?” pede licença em vez de vender. Não acrescente frase, não mande áudio, não mande foto. O Radar troca “o anúncio dos veículos / do empreendimento / de vocês” pelo nicho."],
+  "Apresentação, o anúncio que você viu, o elogio, o Danilo em uma frase e a pergunta com duas opções — tudo numa mensagem. O Radar troca “o anúncio dos veículos / do empreendimento / de vocês” pelo nicho. Não acrescente frase, não mande áudio, não mande foto."],
 
- ["Mensagem 1 — Direct do Instagram (mais curta)",
+ ["Abertura — Direct do Instagram (mais curta)",
   msgDirect(LEAD_EXEMPLO,"Markus"),
-  "No Direct mensagem longa não é lida. Mesma estrutura, metade do tamanho."],
+  "No Direct mensagem longa não é lida. Mesma estrutura, metade do tamanho. Depois da resposta, o fluxo é o mesmo do WhatsApp."],
 
- ["Caiu na recepção — “sobre o quê?”, “quem é?”, “vou ver com o responsável”",
-  txtRecepcaoQuem(LEAD_EXEMPLO),
-  "Nove em cada dez leads chegam sem contato direto e o número achado na página é o do atendimento. Com a recepção não se explica o projeto: pede-se o caminho até quem decide. Se ela encaminhar, marque “Recepção vai encaminhar” e o Radar traz o lead de volta em dois dias."],
+ ["Ele respondeu: “pergunta o preço e some” — valide e convide",
+  TXT_PRECO_SOME,
+  "Uma linha reconhecendo o que ele disse, duas linhas mostrando que tráfego é funil e remarketing (não turbinar post), e o convite: o Danilo mostra na prática, com exemplos de clientes, em 20 minutos. A agenda apertada é dita como fato e como motivo pra reservar já. O terceiro bloco é igual em todas as respostas — é o que você decora."],
 
- ["A pergunta do nicho — uma só, depois do “pode”",
-  "Ele respondeu “pode”, “boa tarde”, “diga” — qualquer coisa. Mande só a pergunta do nicho dele, sem convite junto. O cartão do lead já mostra a certa.\n\nAUTOMOTIVO\n\"Uma curiosidade: chega gente pelo anúncio, mas depois não aparece na loja?\"\n\nIMOBILIÁRIO\n\"Deixa eu te perguntar: chega bastante contato pelo anúncio, mas na hora de agendar a visita a pessoa some?\"\n\nODONTOLOGIA / IMPLANTE\n\"Deixa eu te perguntar uma coisa: hoje o anúncio traz paciente que fecha o tratamento mesmo, ou chega muita gente perguntando preço e depois some?\"\n\nHARMONIZAÇÃO / ESTÉTICA\n\"Uma curiosidade: vocês sentem que o anúncio traz gente que fecha, ou vem muita curiosa só perguntando valor?\"\n\nCIRURGIA PLÁSTICA\n\"Nesse tipo de procedimento a pessoa costuma demorar pra decidir. Vocês conseguem manter contato com quem chama e não fecha na hora?\"\n\nOFTALMOLOGIA\n\"Uma curiosidade: chega gente pelo anúncio buscando consulta simples quando vocês queriam atender caso maior, ou tá vindo o paciente certo?\"\n\nEMAGRECIMENTO / NUTRIÇÃO\n\"Uma curiosidade: vem bastante gente perguntando e depois some sem começar o tratamento? Nesse nicho isso é o mais comum.\"\n\nMÓVEIS PLANEJADOS\n\"Deixa eu te perguntar: vem bastante gente pedir orçamento e depois some sem fechar o projeto?\"\n\nENERGIA SOLAR\n\"Uma curiosidade: chega contato pelo anúncio e a pessoa nem chega a mandar a conta de luz depois?\"\n\nEDUCAÇÃO / FACULDADE / ESCOLA\n\"Deixa eu te perguntar: chega bastante interessado, mas na hora de matricular a pessoa some?\"\n\nCONTABILIDADE\n\"Uma curiosidade: vem contato pelo anúncio, mas quase sempre é quem só quer saber preço?\"\n\nVETERINÁRIA / PET\n\"Uma curiosidade: chega tutor pelo anúncio, mas boa parte só pergunta preço e não agenda?\"\n\nQUALQUER OUTRO\n\"Uma curiosidade: chega bastante gente pelo anúncio, mas na hora de fechar a pessoa some?\"",
-  "Nenhuma pede número. Cada uma descreve uma cena que o dono reconhece na hora — nos dois prints ele reconheceu em menos de dois minutos. E é esse “sim” que abre o convite."],
-
- ["Ele confirmou a dor — “sim”, “é isso mesmo” — valide e convide",
-  TXT_CONFIRMOU,
-  "Uma linha reconhecendo o que ele disse, e o convite dos prints — com o final trocado: “amanhã de manhã ou de tarde?” em vez de “pode ser essa semana?”. Pergunta com duas opções recebe dia e hora."],
-
- ["Ele disse “normal né”, “é assim mesmo”, “faz parte”",
-  txtNormal(LEAD_EXEMPLO),
-  "“Normal né” é o dono dizendo que já aceitou perder contato. Sem a linha “não precisa ser”, o convite chega como solução pra um problema que ele não acha que tem. O Radar troca o verbo pelo nicho: visitar (imobiliário, automotivo), agendar (clínicas), fechar (planejados, solar)."],
+ ["Ele respondeu: “nem é o cliente que a gente quer” — valide e convide",
+  TXT_CLIENTE_ERRADO,
+  "Só o começo muda: aqui o problema é público e funil. O convite é o mesmo. Se ele disser “os dois”, use a resposta do preço."],
 
  ["Ele disse que tá vindo bem — “não, o pessoal aparece”",
   TXT_VINDO_BEM,
-  "Não discuta. Elogie de verdade, ofereça a segunda leitura pra escalar, e dê a saída. Quem está bem e aceita os 20 minutos é o melhor cliente que existe."],
+  "Não discuta e não insista. Elogie de verdade e ofereça a segunda leitura de fora numa frase só — e pare aí. Se ele engatar (“como assim?”), aí sim vai o convite. Se não engatar, marque “Não é o momento”."],
 
- ["Ele disse “depende”, “mais ou menos”, ou contou uma história",
-  TXT_DEPENDE,
-  "Uma segunda pergunta, e só uma, pra ele nomear o problema com as próprias palavras. Depois da resposta, o convite de “Ele confirmou a dor”. Não faça uma terceira pergunta."],
-
- ["Pra dar peso ao convite — opcional, depois que ele confirmou a dor",
-  txtPeso(LEAD_EXEMPLO),
-  "O Radar traz, em cada lead, o erro concreto do anúncio traduzido pra língua do dono (a “observação”). Não vai na abertura — a abertura dos prints funciona sem ela. Vai aqui, entre a validação e o convite: é a prova de que a conversa é sobre o anúncio dele. Antes de usar, confira em “Ver o que ele roda hoje” se o erro ainda está lá."],
-
- ["MARCANDO — ele propôs um dia (“podemos marcar pra segunda?”)",
+ ["MARCANDO — ele propôs um dia (“pode ser segunda?”)",
   TXT_PROPOS_DIA,
-  "Duas opções, nunca “qual horário fica melhor?”. No print, a pergunta aberta custou oito minutos e uma segunda mensagem."],
+  "Duas opções, nunca “qual horário fica melhor?”. Pergunta aberta recebe “depois te falo”."],
 
- ["MARCANDO — ele deu o horário: feche assim (a mensagem que faltou)",
+ ["MARCANDO — ele deu o horário: feche assim",
   TXT_FECHAR_AGENDA,
-  "Dia com data, hora, canal e o que vai acontecer — tudo numa mensagem que fica salva na conversa dele. “Vou encaminhar seu contato pro Danilo” deixa o dono sem saber se alguém vai chamar, quando, e por onde. Quem não sabe o que vai acontecer não aparece."],
+  "Dia com data, hora, canal e o que vai acontecer — tudo numa mensagem que fica salva na conversa dele. “Reservado” em vez de “combinado?”: é você confirmando que segurou o espaço. A linha da agenda apertada é o motivo pra ele aparecer."],
 
  ["MARCANDO — ele foi vago (“semana que vem”, “depois te falo”)",
   TXT_VAGO+"\n\n— se ele não responder, no dia seguinte, uma vez: —\n\n"+TXT_VAGO_FUP,
   "Resposta vaga se responde com duas escolhas pequenas, não com “combinado, me avisa”. Se ainda assim calar, marque “Respondeu e sumiu” e o Radar traz de volta em dois dias."],
 
- ["MARCANDO — confirmação na véspera (obrigatória) e uma hora antes",
-  TXT_VESPERA+"\n\n— uma hora antes: —\n\n"+TXT_1H,
-  "Reunião marcada por WhatsApp com dono de negócio pequeno tem no-show alto; dois toques curtos são o que mais reduz isso, e ainda dão ao dono a chance de remarcar em vez de sumir. Quem manda é o vendedor que marcou. Escreva dia e hora na anotação do lead (ex.: “15/09 14h”) e o Radar te lembra na véspera e no dia."],
+ ["CONFIRMAÇÃO — véspera (peça o “ok”), uma hora antes, e a manhã do dia",
+  TXT_VESPERA+"\n\n— uma hora antes: —\n\n"+TXT_1H+"\n\n— se ele não respondeu a véspera, na manhã do dia: —\n\n"+TXT_DIA_SEM_RESPOSTA,
+  "Confirmação que não pede resposta não confirma nada — por isso o “ok”. A mensagem de uma hora antes pede que ele esteja no computador, porque a reunião é com a campanha dele na tela. Quem manda é o vendedor que marcou. Escreva dia e hora na anotação do lead (ex.: “21/09 14h”) e o Radar te lembra na véspera e no dia."],
 
- ["MARCANDO — ele pediu pra remarcar / perguntou o que é exatamente",
-  TXT_REMARCAR+"\n\n— se ele perguntar “mas é o quê exatamente?”: —\n\n"+TXT_OQUE_E,
-  "Remarcar é normal; o que não pode é ficar sem nova data. E a explicação da reunião cabe em três linhas: 20 minutos, a campanha dele na tela, sem apresentação e sem proposta."],
+ ["Remarcar, não apareceu, e “mas é o quê exatamente?”",
+  TXT_REMARCAR+"\n\n— se ele não apareceu: —\n\n"+TXT_NAO_APARECEU+"\n\n— se ele perguntar o que é a reunião: —\n\n"+TXT_OQUE_E,
+  "Remarcar é normal; o que não pode é ficar sem nova data. Quem faltou uma vez e é tratado bem costuma aparecer na segunda — por isso sem cobrança, com duas opções de novo."],
 
  ["Depois que marcou: o que fazer no Radar",
   TXT_DEPOIS_MARCOU,
   "Sem o clique em REUNIÃO MARCADA a reunião não existe pro Danilo e não sobe o ranking. Sem dia e hora na anotação o Radar não consegue te lembrar da confirmação. Sem o resumo o Danilo entra na chamada sem saber o que o dono disse."],
 
+ ["Caiu na recepção — “sobre o quê?”, “quem é?”, “vou ver com o responsável”",
+  txtRecepcaoQuem(LEAD_EXEMPLO,"Markus"),
+  "Nove em cada dez leads chegam sem contato direto. Aqui você se apresenta inteiro — quem é, o Danilo, o site, a pergunta — e só no fim pede o contato, amarrado ao motivo: a reunião precisa ser com quem paga a campanha, porque é quem decide. Não diga “queria falar com quem cuida da campanha” logo de cara."],
+
+ ["Recepção — ela vai encaminhar / pediu e-mail / disse que não tem interesse",
+  txtRecepcaoEncaminha("Markus")+"\n\n— se ela pedir e-mail: —\n\n"+TXT_RECEPCAO_EMAIL+"\n\n— o e-mail que vai (só isto): —\n\n"+txtEmail(LEAD_EXEMPLO,"Markus")+"\n\n— se ela disser “não temos interesse”: —\n\n"+TXT_RECEPCAO_SEM_INTERESSE,
+  "Se ela vai encaminhar, marque “Recepção vai encaminhar” e o Radar traz o lead de volta em dois dias; nesse dia, uma vez só: “"+TXT_RECEPCAO_FUP+"” Depois disso, “Não é o decisor” e siga. Se ela disse que não tem interesse, agradeça, marque “Não tem interesse” e siga — sem toque depois."],
+
  ["Follow-up 1 (2 dias depois, se não respondeu)",
-  txtFup1(LEAD_EXEMPLO)+"\n\n— se o lead é \"setup profissional\" (sem erro pra apontar): —\n\n"+TXT_FUP1_SETUP,
-  "Trezentas e dez mensagens ficaram sem segundo toque nos quatro primeiros dias. O follow-up leva algo concreto — a observação do anúncio — em vez de um “só passando”. No dia que mandar, clique “Não respondeu”."],
+  txtFup1("Markus"),
+  "Quem não respondeu provavelmente nem leu — por isso o primeiro toque repete a pergunta da abertura, que é o que faz a mensagem funcionar. No dia que mandar, clique “Não respondeu”."],
 
  ["Follow-up 2 (3 dias depois, o último)",
   TXT_FUP2,
   "“Última vez” tira a ameaça de insistência; “se tá bom, ignora” devolve o controle e é o que faz quem não está bem responder. Depois disso, marque “Não respondeu” de novo e siga. Não existe follow-up 3."],
 
- ["Respondeu e sumiu — depois do “pode”, do “sim” ou do convite",
+ ["Respondeu e sumiu — depois da resposta ou do convite",
   TXT_SUMIU,
-  "Quem some depois de responder quase sempre teve um medo que não disse — “vão me vender algo”, “não tenho tempo pra isso”. As duas opções nomeiam os dois medos e tiram o peso da decisão."],
+  "Quem some depois de responder quase sempre teve um medo que não disse — “vão me vender algo”, “não tenho tempo pra isso”. As duas opções nomeiam os dois medos e tiram o peso da decisão. Marque “Respondeu e sumiu”; o Radar traz de volta em dois dias."],
 
- ["Recepção — ela vai encaminhar / pediu e-mail / disse que não tem interesse",
-  txtRecepcaoEncaminha("Markus")+"\n\n— se ela pedir e-mail: —\n\n"+txtRecepcaoEmail(LEAD_EXEMPLO)+"\n\n— o e-mail que vai (só isto, com o print): —\n\n"+txtEmail(LEAD_EXEMPLO,"Markus")+"\n\n— se ela disser “não temos interesse”: —\n\n"+TXT_RECEPCAO_SEM_INTERESSE,
-  "A recepção filtra venda, não aviso. Cada resposta reposiciona a mensagem como aviso e deixa o print, que ela consegue encaminhar sem explicar nada. Se em dois dias não voltou: “"+TXT_RECEPCAO_FUP+"” Depois disso, “Não é o decisor” e siga."],
+ ["Se ele responder: já tenho agência / gestor",
+  TXT_JA_TEM,
+  "Nunca ataque quem atende hoje — isso põe o dono na defensiva do lado do outro. Uma pergunta só, sobre o retorno, e a oferta de segunda opinião. Uma vez."],
 
- ["Se ele responder: já tenho agência / gestor / a gente faz por dentro",
-  txtJaTem(LEAD_EXEMPLO)+"\n\n— se “nossa equipe cuida”: —\n\n"+TXT_FAZ_INTERNO,
-  "Nunca ataque quem atende hoje — isso põe o dono na defensiva do lado do outro. A observação faz o trabalho sozinha: se tem alguém cuidando e o erro está lá, o dono tira a conclusão. Ofereça segunda opinião, e pare. Uma vez."],
+ ["Se ele responder: a gente faz por dentro / nossa equipe cuida",
+  TXT_FAZ_INTERNO,
+  "Quem responde isso é alguém da equipe. Insistir soa como tirar o lugar dele, e ele não vai levar nada pro dono. Agradeça, marque “Não é o momento” e siga."],
 
  ["Se ele responder: não tenho interesse / não é o momento",
-  txtSemInteresse(LEAD_EXEMPLO)+"\n\n— se ele agradecer o print, UMA pergunta: —\n\n"+TXT_AGRADECEU+"\n\n— se a resposta for “não é prioridade”: —\n\n"+TXT_NAO_PRIORIDADE,
-  "“Não tenho interesse” antes de qualquer pergunta é reflexo, não decisão. Discutir gera o “pediu pra parar”. Dar o print e sair deixa a porta aberta. Marque “Não é o momento” (volta em 30 dias) ou “Não tem interesse” (não volta)."],
+  TXT_SEM_INTERESSE+"\n\n— se ele responder de boa ou agradecer, UMA pergunta: —\n\n"+TXT_AGRADECEU+"\n\n— se a resposta for “não é prioridade”: —\n\n"+TXT_NAO_PRIORIDADE,
+  "“Não tenho interesse” antes de qualquer pergunta é reflexo, não decisão. Discutir gera o “pediu pra parar”; sair bem deixa a porta aberta. A pergunta “retorno bom ou não é prioridade?” separa os dois casos sem pressionar — e em nenhum deles você insiste. Marque “Não é o momento” (volta em 30 dias) ou “Não tem interesse” (não volta)."],
 
  ["Se ele responder: manda uma proposta / manda por e-mail",
   TXT_PROPOSTA,
-  "Prometer proposta é a pior saída: você não tem proposta pra mandar e o lead fica esperando. Concorde, redefina o que vai (print e três linhas) e traga quem decide pra chamada."],
+  "Prometer proposta é a pior saída: você não tem proposta pra mandar e o lead fica esperando. Concorde, redefina o que vai (o site) e traga quem decide pra chamada — é lá que a proposta nasce certa."],
 
  ["Se ele responder: vou pensar",
-  TXT_PENSAR,
-  "“Vou pensar” é quase sempre um não educado com um motivo escondido. As três opções fazem a pessoa nomear o motivo real. Valor → régua do CLT. Resultado → os 20 minutos existem pra isso. Momento → “Não é o momento” e volta em 30 dias."],
+  TXT_PENSAR+"\n\n— se for valor: use o texto de “quanto custa”. Se for resultado: —\n\n"+TXT_PENSAR_RESULTADO+"\n\n— se for o momento: —\n\n"+TXT_PENSAR_MOMENTO,
+  "“Vou pensar” é quase sempre um não educado com um motivo escondido. As três opções fazem a pessoa nomear o motivo real. Valor → a régua do CLT. Resultado → os 20 minutos existem pra isso. Momento → “Não é o momento”, sem insistir."],
 
  ["Se ele responder: já investi e não deu em nada",
-  txtQueimou(),
-  "Nunca discuta com quem já se queimou. Pergunte o que aconteceu, deixe contar, e só então ofereça uma explicação diferente da que ele tem na cabeça."],
+  TXT_QUEIMOU,
+  "Nunca discuta com quem já se queimou. Pergunte o que aconteceu, deixe contar, e só então ofereça uma explicação diferente da que ele tem na cabeça — funil, público, remarketing."],
 
  ["Se ele perguntar: quanto custa (NUNCA passe valor)",
   TXT_PRECO,
-  "Você NÃO passa preço, nunca. Mas fugir da pergunta queima confiança. A comparação com um CLT deixa a pessoa se autoqualificar sem ancorar número. Feche com as duas opções de horário."],
+  "Você NÃO passa preço, nunca. Mas fugir da pergunta queima confiança. A régua do CLT deixa a pessoa se autoqualificar sem ancorar número — e a diferença é que esse “funcionário” sai pra buscar cliente, é mídia, e ainda constrói autoridade. Feche com as duas opções de horário."],
 
  ["A frase mais importante: investimento não é gasto",
   "Deixa eu te falar uma coisa antes de qualquer número.\n\nMarketing não é gasto. Gasto é dinheiro que sai e não volta — conta de luz, aluguel. Investimento é dinheiro que sai pra trazer gente que hoje não te conhece.\n\nQuando o anúncio tá certo, ele não custa: ele se paga. O problema é que ninguém mede, então parece despesa.\n\nÉ exatamente isso que o Danilo mostra na conversa: quanto você coloca e quanto volta.",
@@ -839,7 +838,7 @@ var BIBLIOTECA=[
   "Pare na hora e marque “Pediu pra não contatar”. É LGPD, não gentileza."],
 
  ["O que nunca fazer",
-  "• NUNCA passe valor. Nem \"a partir de\", nem \"gira em torno de X reais\". Quem apresenta preço é o Danilo, na reunião. Você só dá a régua do CLT.\n• Não termine o convite sem duas opções de horário. “Pode ser essa semana?” recebe “semana que vem”.\n• Não escreva “vou encaminhar seu contato pro Danilo” sem antes fixar dia, data, hora e que ele chama nesse número.\n• Não pule a confirmação da véspera. Reunião sem confirmação é no-show.\n• Não mande a pergunta do nicho junto com o convite. Espere o “sim”.\n• Não prometa proposta, resultado, prazo ou número de clientes.\n• Não mande áudio no primeiro contato. Não mande portfólio nem apresentação.\n• Não aponte erro do anúncio sem conferir na Biblioteca de Anúncios naquele dia.\n• Não insista depois do follow-up 2. Marque “Não respondeu” e siga.\n• Se pedirem pra parar, pare na hora. Isso é LGPD, não gentileza.",
+  "• NUNCA diga que o anúncio tem erro, defeito ou problema. Não mande print. O sinal que o Radar mostra no cartão é só pra você.\n• NUNCA passe valor. Nem \"a partir de\", nem \"gira em torno de X reais\". Quem apresenta preço é o Danilo, na reunião. Você só dá a régua do CLT.\n• Não diga “sem compromisso”. A reunião tem valor e a agenda do Danilo é apertada.\n• Não termine o convite sem duas opções de horário. “Pode ser essa semana?” recebe “semana que vem”.\n• Não escreva “vou encaminhar seu contato pro Danilo” sem antes fixar dia, data, hora e que ele chama nesse número.\n• Não pule a confirmação da véspera. Reunião sem “ok” é no-show.\n• Não insista com quem disse “a gente faz por dentro”, “não é prioridade” ou “tá vindo bem”. Agradeça e siga.\n• Não prometa proposta, resultado, prazo ou número de clientes.\n• Não mande áudio no primeiro contato. Não mande portfólio nem apresentação — o site do Danilo é o que vai.\n• Não insista depois do follow-up 2. Marque “Não respondeu” e siga.\n• Se pedirem pra parar, pare na hora. Isso é LGPD, não gentileza.",
   "Os três primeiros da agenda são os que mais custaram nos prints: uma reunião ficou em “semana que vem” e a outra saiu sem dia, hora e canal escritos. Valor solto por WhatsApp vira âncora e mata a reunião antes de nascer."]
 ];
 
@@ -980,7 +979,7 @@ document.addEventListener("focusout",function(){
   setTimeout(function(){ if(RENDER_PEND&&!digitando()) render(); },60);
 });
 
-var VERSAO_RADAR="14/09/2026 - scripts v3: sequencia dos prints, agenda e confirmacao de reuniao";
+var VERSAO_RADAR="14/09/2026 - scripts v4: fluxo novo montado com o Danilo (pergunta na abertura, sem print, site)";
 /* ---------- gate: quem e voce ---------- */
 function entrarComo(p){
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
@@ -1669,45 +1668,45 @@ function corpo(l,dono,st){
   var fup2Vez   = reg.s==="fup1";
   var sumiuVez  = !!(atrasado && (reg.s==="conversa"||reg.s==="fup2"));
   var respostas=el("div",{style:"margin-top:7px"},[
-    sub("Ele liberou — “pode”, “boa tarde”, “diga”"),
-    seEle("Mande só a pergunta do nicho dele. Nada junto.",pk),
-    sub("Ele respondeu à pergunta"),
-    seEle("Confirmou a dor — “sim”, “é isso mesmo” — valide e convide",TXT_CONFIRMOU),
-    seEle("Disse “normal né” / “é assim mesmo”",txtNormal(l)),
-    seEle("Disse que tá vindo bem — “não, o pessoal aparece”",TXT_VINDO_BEM),
-    seEle("Disse “depende” / contou uma história — uma segunda pergunta, só uma",TXT_DEPENDE),
-    obs?seEle("Opcional — pra dar peso ao convite, depois que ele confirmou a dor (confira o anúncio antes)",txtPeso(l)):null,
+    sub("Ele respondeu à pergunta da abertura"),
+    seEle("Disse que pergunta o preço e some — valide e convide",TXT_PRECO_SOME),
+    seEle("Disse que nem é o cliente que eles querem — valide e convide",TXT_CLIENTE_ERRADO),
+    seEle("Disse “os dois” — use a primeira",TXT_PRECO_SOME),
+    seEle("Disse que tá vindo bem — só isto, sem convite; se ele engatar, convide",TXT_VINDO_BEM),
     sub("Marcando a reunião"),
     seEle("Ele propôs um dia — peça manhã ou tarde",TXT_PROPOS_DIA),
     seEle("Ele deu o horário — feche com dia, data, hora e como o Danilo chama",TXT_FECHAR_AGENDA),
     seEle("Ele foi vago — “semana que vem”, “depois te falo”",TXT_VAGO),
     seEle("Não confirmou o horário — no dia seguinte, uma vez",TXT_VAGO_FUP),
-    seEle((vesperaVez?"HOJE: confirmação da véspera":"Véspera — confirmação obrigatória"),TXT_VESPERA,vesperaVez),
+    seEle((vesperaVez?"HOJE: confirmação da véspera":"Véspera — confirmação obrigatória, peça o “ok”"),TXT_VESPERA,vesperaVez),
     seEle((diaVez?"HOJE: aviso de uma hora antes":"Uma hora antes"),TXT_1H,diaVez),
+    seEle("Ele não respondeu a véspera — na manhã do dia",TXT_DIA_SEM_RESPOSTA),
     seEle("Ele pediu pra remarcar",TXT_REMARCAR),
+    seEle("Ele não apareceu — sem cobrança, duas opções de novo",TXT_NAO_APARECEU),
     seEle("Ele perguntou o que é exatamente a reunião",TXT_OQUE_E),
     seEle("Depois que marcou — o que fazer no Radar",TXT_DEPOIS_MARCOU),
     sub("Caiu na recepção"),
-    seEle("“Sobre o quê?” / “quem é?” — peça o caminho até quem decide",txtRecepcaoQuem(l)),
-    seEle("Ela vai encaminhar — agradeça, deixe o print e marque “Recepção vai encaminhar”",txtRecepcaoEncaminha(vn)),
-    seEle("Ela pediu e-mail — descubra se é o e-mail da pessoa certa",txtRecepcaoEmail(l)),
-    seEle("O e-mail que vai (só isto, com o print anexado)",txtEmail(l,vn)),
-    seEle("Ela disse “não temos interesse”",TXT_RECEPCAO_SEM_INTERESSE),
-    seEle(recVenceu?"A recepção não voltou — mande hoje":"Se a recepção não voltar em 2 dias",TXT_RECEPCAO_FUP,recVenceu),
+    seEle("“Sobre o quê?” / “quem é?” / “vou ver com o responsável” — apresente tudo e peça o contato de quem paga a campanha",txtRecepcaoQuem(l,vn)),
+    seEle("Ela vai encaminhar — agradeça e marque “Recepção vai encaminhar”",txtRecepcaoEncaminha(vn)),
+    seEle("Ela pediu e-mail — descubra se é o e-mail de quem decide",TXT_RECEPCAO_EMAIL),
+    seEle("O e-mail que vai (só isto)",txtEmail(l,vn)),
+    seEle("Ela disse “não temos interesse” — agradeça e marque “Não tem interesse”",TXT_RECEPCAO_SEM_INTERESSE),
+    seEle(recVenceu?"A recepção não voltou — mande hoje, uma vez":"Se a recepção não voltar em 2 dias — uma vez; depois, “Não é o decisor”",TXT_RECEPCAO_FUP,recVenceu),
     sub("Objeções"),
-    seEle("Já tem agência ou gestor",txtJaTem(l)),
-    seEle("Faz por dentro / “nossa equipe cuida”",TXT_FAZ_INTERNO),
-    seEle("Não tem interesse / não é o momento — deixe o print e saia",txtSemInteresse(l)),
-    seEle("Ele agradeceu o print — uma pergunta só",TXT_AGRADECEU),
-    seEle("Ele disse que “não é prioridade”",TXT_NAO_PRIORIDADE),
+    seEle("Já tem agência ou gestor",TXT_JA_TEM),
+    seEle("Faz por dentro / “nossa equipe cuida” — não insista; marque “Não é o momento”",TXT_FAZ_INTERNO),
+    seEle("Não tem interesse / não é o momento — não insista",TXT_SEM_INTERESSE),
+    seEle("Ele respondeu de boa ou agradeceu — uma pergunta só",TXT_AGRADECEU),
+    seEle("Ele disse que “não é prioridade” — não insista; marque “Não é o momento”",TXT_NAO_PRIORIDADE),
     seEle("Manda proposta / manda por e-mail",TXT_PROPOSTA),
-    seEle("Vou pensar",TXT_PENSAR),
-    seEle("Já investi e não deu em nada",txtQueimou()),
-    seEle("Quanto custa? (nunca invente um valor)",TXT_PRECO),
+    seEle("Vou pensar — descubra o motivo",TXT_PENSAR),
+    seEle("…se a dúvida for se dá resultado",TXT_PENSAR_RESULTADO),
+    seEle("…se for o momento — não insista; marque “Não é o momento”",TXT_PENSAR_MOMENTO),
+    seEle("Já investi e não deu em nada",TXT_QUEIMOU),
+    seEle("Quanto custa? (nunca passe valor — se o “vou pensar” for por valor, use esta)",TXT_PRECO),
     seEle("Pediu pra não chamar mais — responda só isto e marque “Pediu pra não contatar”",TXT_PARAR),
     sub("Sem resposta"),
-    seEle((fupVenceu?"VENCEU — mande hoje o follow-up 1":"Se ele NÃO responder até "+dataBR(reg.d?venc:prevista)+" — follow-up 1"),
-      setupPro?TXT_FUP1_SETUP:txtFup1(l),fupVenceu),
+    seEle((fupVenceu?"VENCEU — mande hoje o follow-up 1":"Se ele NÃO responder até "+dataBR(reg.d?venc:prevista)+" — follow-up 1"),txtFup1(vn),fupVenceu),
     seEle((fup2Vez?"Agora é a última — follow-up 2":"Se continuar sem resposta 3 dias depois — follow-up 2, a última"),TXT_FUP2,fup2Vez),
     seEle((sumiuVez?"VENCEU — ele respondeu e sumiu, mande hoje":"Se ele respondeu e sumiu (2 dias depois)"),TXT_SUMIU,sumiuVez)
   ]);
@@ -1727,7 +1726,7 @@ function corpo(l,dono,st){
     el("div",{style:"margin-top:7px"},[clas,dicaReuniao,nota]));
 
   var det=el("dl",{class:"kv"},[
-    el("dt",{text:"Erro no anúncio dele"}), el("dd",{text:l.gancho||"—"}),
+    el("dt",{text:"Sinal no anúncio (só pra você — não fale disso pro cliente)"}), el("dd",{text:l.gancho||"—"}),
     el("dt",{text:"WhatsApp"}), el("dd",{},[l.wa?el("span",{class:"mono",text:l.wa}):document.createTextNode("pegar na página")]),
     el("dt",{text:"Instagram"}), el("dd",{},[ig?el("a",{href:ig,target:"_blank",rel:"noopener",text:l.ig}):document.createTextNode("pegar na página")]),
     el("dt",{text:"Página"}), el("dd",{},[el("a",{href:fb,target:"_blank",rel:"noopener",text:"Abrir no Facebook"})]),
@@ -1894,13 +1893,14 @@ function stat(rot,val,sub){
 function viewScripts(main){
   main.appendChild(el("div",{class:"page-head"},[el("div",{},[
     el("h1",{text:"Scripts e treinamento"}),
-    el("p",{text:"A sequência que rendeu as primeiras reuniões, passo a passo, com o porquê de cada texto — leia isso pelo menos uma vez. No cartão de cada lead os textos já vêm preenchidos."})
+    el("p",{text:"O fluxo novo (14/09), passo a passo, com o porquê de cada texto — leia isso pelo menos uma vez. No cartão de cada lead os textos já vêm preenchidos."})
   ])]));
 
   main.appendChild(el("div",{class:"regra"},[
-    el("b",{text:"As duas regras que não se quebram"}),
+    el("b",{text:"As três regras que não se quebram"}),
     el("div",{html:"<b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>1.</b> Você não vende, você marca reunião. O Danilo apresenta valor, você não. "+
-      "<br><b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>2.</b> Se perguntarem preço, dê só a régua: fica na faixa de contratar um CLT. Nunca um número."})
+      "<br><b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>2.</b> Se perguntarem preço, dê só a régua: fica na faixa de contratar um CLT. Nunca um número."+
+      "<br><b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>3.</b> Nunca diga que o anúncio tem erro ou defeito. Nada de print — o que vai é o site do Danilo."})
   ]));
 
   BIBLIOTECA.forEach(function(s,i){
