@@ -242,6 +242,25 @@ td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-varian
 .mot.al.on{background:var(--morno);border-color:var(--morno);color:#fff}
 .mot.fr{color:var(--text-3)}
 .mot.fr.on{background:var(--text-3);border-color:var(--text-3);color:var(--ground)}
+/* A classificacao mora no alto do cartao (18/09): o vendedor abre o lead,
+   manda a mensagem e marca ali mesmo, sem rolar ate o fim dos scripts. */
+.classtopo{grid-column:1/-1;background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--accent);border-radius:var(--r);padding:12px 13px 11px}
+.classtopo .ct-head{display:flex;align-items:baseline;gap:4px 9px;flex-wrap:wrap;margin-bottom:10px}
+.classtopo .ct-head b{font-size:13.5px}
+.classtopo .ct-head span{font-size:12px;color:var(--text-2)}
+.motgrupos{columns:260px auto;column-gap:18px}
+.motgrupos .motgrupo{break-inside:avoid;page-break-inside:avoid}
+.classtopo textarea{margin-top:2px;min-height:44px}
+@media(max-width:760px){
+  .classtopo{padding:10px 10px 9px}
+  .classtopo .ct-head{margin-bottom:7px}
+  .classtopo .ct-head span{display:none}
+  .classtopo .motgrupo{margin-bottom:6px;gap:3px}
+  .classtopo .motlinha{gap:4px}
+  .classtopo .mot{padding:4px 8px;font-size:11.5px}
+  .classtopo textarea{min-height:38px}
+}
 .tagmot{font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;
   background:var(--surface-3);color:var(--text-2);white-space:nowrap}
 
@@ -1058,7 +1077,7 @@ document.addEventListener("focusout",function(){
   setTimeout(function(){ if(RENDER_PEND&&!digitando()) render(); },60);
 });
 
-var VERSAO_RADAR="17/09/2026 - Danilo entra na prospeccao com fila propria (aba Meus leads, scripts em primeira pessoa); remessa dividida entre 13";
+var VERSAO_RADAR="18/09/2026 - classificacao da conversa no alto do cartao do lead (um clique, sem rolar ate o fim)";
 /* ---------- gate: quem e voce ---------- */
 function entrarComo(p){
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
@@ -1655,8 +1674,10 @@ function corpo(l,dono,st){
   var pk=perguntaChave(l.nicho);
 
   /* Chips de classificacao: um clique grava o que aconteceu e o status junto. */
-  var clas=el("div",{});
-  GRUPOS_MOTIVO.forEach(function(g){
+  /* ordem propria do cartao: em duas colunas os grupos ficam equilibrados
+     (positivo e em andamento de um lado, objecao e descarte do outro) */
+  var clas=el("div",{class:"motgrupos"});
+  ["Ganhou","Em andamento","Sem retorno","Pediu outra coisa","Objeção","Descarte"].forEach(function(g){
     var doGrupo=MOTIVOS.filter(function(m){return m.g===g;});
     if(!doGrupo.length) return;
     var linha=el("div",{class:"motlinha"});
@@ -1737,7 +1758,7 @@ function corpo(l,dono,st){
       if(vesperaVez) return "Reunião amanhã, "+dataBR(dr.iso)+(dr.hora?" às "+dr.hora:"")+" — mande a confirmação da véspera hoje (passo 4).";
       if(diaVez) return "Reunião HOJE"+(dr.hora?" às "+dr.hora:"")+" — mande o aviso de uma hora antes (passo 4).";
       if(ddr<-1) return "Reunião marcada pra "+dataBR(dr.iso)+(dr.hora?" às "+dr.hora:"")+" — confirme na véspera.";
-      return "A reunião foi dia "+dataBR(dr.iso)+". Marque o que aconteceu no passo 5.";
+      return "A reunião foi dia "+dataBR(dr.iso)+". Marque o que aconteceu no alto do cartão.";
     }
     if(!reg.d) return "Se ele não responder, volte aqui dia "+dataBR(prevista)+" (2 dias depois de hoje)";
     if(atrasado) return "Você falou com ele dia "+dataBR(reg.d)+" — o follow-up venceu dia "+dataBR(venc)+". Mande hoje.";
@@ -1809,10 +1830,24 @@ function corpo(l,dono,st){
     el("b",{text:"Reunião marcada — falta dia e hora"}),
     el("div",{text:"Escreva na anotação abaixo: dia e hora (ex.: 15/09 14h), com quem, e o que ele respondeu. É daí que o Radar te lembra da confirmação na véspera e no dia."})
   ]):null;
+  /* A classificacao fica no alto do cartao; o passo 5 la embaixo so aponta pra ela. */
+  var topoClass=el("div",{class:"classtopo",id:"classtopo"},[
+    el("div",{class:"ct-head"},[
+      el("b",{text:"Como ficou esta conversa?"}),
+      el("span",{text:souDanilo
+        ? "Mandou a mensagem ou ele respondeu? Um clique guarda o resultado na sua fila e no histórico."
+        : "Mandou a mensagem ou ele respondeu? Um clique aqui guarda o resultado e avisa o Danilo."})
+    ]),
+    clas,dicaReuniao,nota
+  ]);
   var p5=passo(5,"Marque o que aconteceu",
-    souDanilo?"Clique em um botão abaixo. Isso guarda o resultado na sua fila e no histórico. Sem isso, o lead some do seu controle."
-             :"Clique em um botão abaixo. Isso guarda o resultado e avisa o Danilo. Sem isso, o lead some do seu controle.",
-    el("div",{style:"margin-top:7px"},[clas,dicaReuniao,nota]));
+    "A classificação fica no alto deste cartão, logo abaixo do nome da empresa. Sem ela, o lead some do seu controle.",
+    el("div",{class:"acts",style:"margin-top:7px"},[
+      el("button",{class:"btn",onclick:function(){
+        var t=document.getElementById("classtopo");
+        if(t&&t.scrollIntoView) t.scrollIntoView({behavior:"smooth",block:"center"});
+      }},[document.createTextNode("Subir para classificar")])
+    ]));
 
   var det=el("dl",{class:"kv"},[
     el("dt",{text:"Sinal no anúncio (só pra você — não fale disso pro cliente)"}), el("dd",{text:l.gancho||"—"}),
@@ -1838,6 +1873,7 @@ function corpo(l,dono,st){
   }
 
   return el("div",{class:"rbody"},[
+    topoClass,
     el("div",{class:"block"},[
       avisoHerd,
       el("div",{class:"eyebrow",text:"Roteiro — siga na ordem"}),
