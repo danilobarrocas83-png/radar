@@ -283,6 +283,41 @@ td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-varian
 .copiar{font-size:11.5px;font-weight:600;color:var(--accent-ink);background:none;
   padding:3px 0;text-decoration:underline;text-underline-offset:2px}
 .copiar:hover{opacity:.7}
+/* ---------- Cartao do lead (21/09): classificacao, contato, site e todas as
+   mensagens logo abaixo, cada uma com o seu botao de copiar ---------- */
+.rbody>.full{grid-column:1/-1;min-width:0}
+.ct-sit{display:flex;gap:6px 8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.ct-sit:empty{display:none}
+.ct-ok{background:var(--ok-soft);color:var(--ok);border-radius:6px;padding:5px 10px;font-size:12.5px;font-weight:700}
+.cardbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px}
+.cardbox>.cb-head{display:flex;align-items:baseline;gap:4px 9px;flex-wrap:wrap;margin-bottom:10px}
+.cardbox>.cb-head b{font-size:13.5px}
+.cardbox>.cb-head span{font-size:12px;color:var(--text-2);line-height:1.5}
+.siterow{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:10px;padding:8px 10px;
+  border:1px dashed var(--line);border-radius:6px;background:var(--surface-2)}
+.siterow a{font-weight:600;font-size:13px;color:var(--accent-ink);overflow-wrap:anywhere}
+.siterow .copiar,details.msg>summary .copiar{flex:none;border:1px solid var(--line);border-radius:6px;
+  padding:4px 10px;background:var(--surface);text-decoration:none}
+.msgcols{columns:2 340px;column-gap:24px}
+.msgcols .eyebrow{break-after:avoid;margin:13px 0 6px}
+.msgcols>.eyebrow:first-child{margin-top:0}
+details.msg{break-inside:avoid;page-break-inside:avoid;border-left:3px solid var(--line-soft);padding-left:10px;margin-bottom:5px}
+details.msg.venceu{border-left-color:var(--quente)}
+details.msg>summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;padding:4px 0}
+details.msg>summary::-webkit-details-marker{display:none}
+details.msg>summary::before{content:"\25B8";color:var(--text-3);font-size:12px;flex:none;width:10px}
+details.msg[open]>summary::before{content:"\25BE"}
+details.msg .q{flex:1;min-width:0;font-family:Archivo;font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--text-2);line-height:1.4}
+details.msg.venceu .q{color:var(--quente)}
+details.msg>.scriptbox{margin:4px 0 9px}
+.row.feito .rtitle b::before{content:"\2713\00a0";color:var(--ok)}
+/* no celular a coluna dos valores de "Dados da empresa" ficava com 11px de
+   largura e o bloco passava de 2000px de altura: uma coluna so resolve */
+@media(max-width:760px){
+  .kv{grid-template-columns:1fr;gap:1px 0}
+  .kv dt{margin-top:7px}
+}
 .barras{display:flex;flex-direction:column;gap:5px}
 .barra{display:grid;grid-template-columns:150px 1fr 40px;gap:10px;align-items:center}
 .barra>span:first-child{font-size:12.5px;color:var(--text-2)}
@@ -1001,10 +1036,17 @@ function ehGestor(id){
   var a=STATE.equipe.filter(function(p){return p.id===id})[0];
   return !!(a&&a.gestor);
 }
+/* O lead aberto nao muda de lugar na lista quando e classificado. Antes ele
+   pulava pro fim, a tela ficava mostrando outros leads "Nao contatado" no
+   lugar dele e o vendedor achava que a marcacao nao tinha pegado (21/09). */
+function pesoNovo(l){
+  if(l.id===STATE.aberto && (STATE.abertoEraNovo===true||STATE.abertoEraNovo===false)) return STATE.abertoEraNovo?0:1;
+  return statusDe(donoDoLead(l),l.id)==="novo"?0:1;
+}
 function ordenar(arr){
   var peso={A:0,B:1,C:2};
   return arr.slice().sort(function(a,b){
-    var sa=statusDe(donoDoLead(a),a.id)==="novo"?0:1, sb=statusDe(donoDoLead(b),b.id)==="novo"?0:1;
+    var sa=pesoNovo(a), sb=pesoNovo(b);
     if(sa!==sb) return sa-sb;
     var pa=peso[a.prio]!==undefined?peso[a.prio]:3, pb=peso[b.prio]!==undefined?peso[b.prio]:3;
     if(pa!==pb) return pa-pb;
@@ -1055,6 +1097,11 @@ function salvarEquipe(){
    do salvamento (que so dispara ao sair do campo). Guardamos o pedido e
    redesenhamos quando o foco sair. */
 var RENDER_PEND=false, _rq=null;
+/* No iPhone tocar num botao nao tira o foco do campo de texto: sem isto a
+   tela nao redesenhava depois da classificacao e o "check" so aparecia mais tarde. */
+function soltarFoco(){
+  try{ var a=document.activeElement; if(a&&a!==document.body&&a.blur&&digitando()) a.blur(); }catch(e){}
+}
 function digitando(){
   var a=document.activeElement;
   if(!a) return false;
@@ -1078,7 +1125,7 @@ document.addEventListener("focusout",function(){
   setTimeout(function(){ if(RENDER_PEND&&!digitando()) render(); },60);
 });
 
-var VERSAO_RADAR="21/09/2026 - Cadu entra no lugar do Arthur Viana (mesmo usuario v2, mesma fila)";
+var VERSAO_RADAR="21/09/2026 (2) - cartao: classificacao, contato, site e todas as mensagens com copiar; o lead marcado nao pula mais na lista e ganha check";
 /* ---------- gate: quem e voce ---------- */
 function entrarComo(p){
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
@@ -1312,7 +1359,11 @@ function avisoSync(){
       el("button",{class:"btn-alerta",onclick:transferirParaRadarNovo},[document.createTextNode(n? "Salvar "+n+" marcacao(oes) e abrir o Radar novo" : "Abrir o Radar novo")])
     ]);
   }
-  var travado = (DIAG.leituraOk===false) || (DIAG.escritaOk===false) || FILA.length>0;
+  /* Fila recem-criada nao e problema: o envio leva menos de um segundo. Antes
+     TODA marcacao acendia este aviso vermelho por ate 30 s, dizendo que nada
+     estava chegando. Agora so aparece se o envio falhou ou esta parado ha 20 s. */
+  var filaParada = FILA.length>0 && FILA_DESDE>0 && (Date.now()-FILA_DESDE>20000);
+  var travado = (DIAG.leituraOk===false) || (DIAG.escritaOk===false) || filaParada;
   if(!travado) return null;
   var det=[];
   if(FILA.length) det.push(FILA.length+" marcacao(oes) ainda nao subiram");
@@ -1599,7 +1650,9 @@ function filtrar(arr){
        para o vendedor ver a confirmacao antes de fechar */
     if(l.id===STATE.aberto) return true;
     var s=statusDe(donoDoLead(l),l.id);
-    if(f==="hoje"&&(String(l.loteData||"")!==hoje||s!=="novo")) return false;
+    /* a remessa de hoje mostra tambem o que ja foi trabalhado (vai pro fim,
+       com o check): antes o lead sumia da lista e parecia nao ter sido marcado */
+    if(f==="hoje"&&String(l.loteData||"")!==hoje) return false;
     if(f==="novo"&&s!=="novo") return false;
     if(f==="A"&&l.prio!=="A") return false;
     if(f==="andamento"&&ABERTOS.indexOf(s)<0) return false;
@@ -1620,6 +1673,8 @@ function desenharLista(cont,v,proprio){
     cont.appendChild(el("div",{class:"empty",text:msg}));
     return;
   }
+  if(STATE.filtro==="hoje" && !arr.some(function(l){return statusDe(donoDoLead(l),l.id)==="novo";}))
+    cont.appendChild(el("div",{class:"empty",text:"Você já trabalhou toda a remessa de hoje — os leads abaixo estão marcados com ✓. Vá para Follow-ups, ou mude o filtro para “Não contatados” e pegue leads dos dias anteriores."}));
   arr.slice(0,200).forEach(function(l){cont.appendChild(linha(l,v));});
   if(arr.length>200) cont.appendChild(el("div",{class:"empty",
     text:"Mostrando 200 de "+arr.length+". Use a busca ou os filtros para achar o resto."}));
@@ -1645,7 +1700,7 @@ function linha(l,v){
   }
 
   row.appendChild(el("button",{class:"rhead","aria-expanded":aberto?"true":"false",
-    onclick:function(){STATE.aberto=aberto?null:l.id;render();}},[
+    onclick:function(){STATE.aberto=aberto?null:l.id;STATE.abertoEraNovo=aberto?null:(st==="novo");render();}},[
     el("div",{style:"min-width:0"},[
       el("div",{class:"rtitle"},[
         el("b",{text:l.empresa}),
@@ -1664,6 +1719,16 @@ function linha(l,v){
   return row;
 }
 
+/* quais mensagens do cartao estao abertas (chave: lead + titulo) */
+var MSG_ABERTAS={};
+/* o site do Danilo, escrito por extenso e com botao de copiar */
+function linhaSite(meu){
+  return el("div",{class:"siterow"},[
+    el("span",{class:"eyebrow",text:meu?"Seu site":"Site do Danilo"}),
+    el("a",{href:SITE_DANILO,target:"_blank",rel:"noopener",text:SITE_DANILO}),
+    el("button",{class:"copiar",onclick:function(){copiar(SITE_DANILO)}},[document.createTextNode("copiar link")])
+  ]);
+}
 function corpo(l,dono,st){
   var vn=nomeVend(dono), souDanilo=ehGestor(dono);
   var mA=msgWhats(l,vn,souDanilo), mC=msgDirect(l,vn,souDanilo);
@@ -1685,79 +1750,64 @@ function corpo(l,dono,st){
     doGrupo.forEach(function(m){
       linha.appendChild(el("button",{
         class:"mot "+(m.cor||"")+(reg.m===m.id?" on":""),
-        onclick:function(){ salvarReg(l.id,{s:m.st,m:m.id,d:HOJE},dono);
+        onclick:function(){ soltarFoco(); salvarReg(l.id,{s:m.st,m:m.id,d:HOJE},dono);
           toast(m.rot==="REUNIÃO MARCADA"?"Boa! Reunião registrada":"Classificado: "+m.rot); }
       },[document.createTextNode(m.rot)]));
     });
     clas.appendChild(el("div",{class:"motgrupo"},[el("span",{text:g}),linha]));
   });
 
-  /* caixa de texto pronta com link de copiar */
-  function caixa(txt,destaque){
-    return el("div",{},[
-      el("div",{class:"scriptbox",style:destaque?"border-left:3px solid var(--accent)":"",text:txt}),
-      el("button",{class:"copiar",onclick:function(){copiar(txt)}},
-        [document.createTextNode("copiar este texto")])
-    ]);
-  }
-  function seEle(pergunta,txt,destaque){
+  /* Cada mensagem e uma linha com o titulo da situacao e o botao de copiar; o
+     texto abre no toque. O que esta aberto fica em MSG_ABERTAS, senao a
+     releitura do banco (a cada 30 s) fecharia tudo de novo. */
+  function seEle(pergunta,txt,destaque,abrir){
     if(souDanilo) txt=vozDoDanilo(txt);
-    return el("div",{class:"se"+(destaque?" venceu":"")},[el("span",{class:"q",text:pergunta}),caixa(txt,destaque)]);
-  }
-  function sub(t){ return el("div",{class:"eyebrow",style:"margin:12px 0 7px",text:t}); }
-  function passo(n,titulo,texto,extra){
-    return el("div",{class:"passo"},[
-      el("i",{text:String(n)}),
-      el("div",{},[el("div",{class:"tit",text:titulo}),
-        texto?el("div",{class:"txt",text:texto}):null, extra||null])
-    ]);
-  }
-
+    var k=l.id+"|"+pergunta;
+    var d=el("details",{class:"msg"+(destaque?" venceu":"")});
+    if((k in MSG_ABERTAS)?MSG_ABERTAS[k]:!!(destaque||abrir)) d.setAttribute("open","open");
+    d.addEventListener("toggle",function(){ MSG_ABERTAS[k]=d.open; });
+    d.appendChild(el("summary",{},[
+      el("span",{class:"q",text:pergunta}),
+      el("button",{class:"copiar",onclick:function(e){ e.preventDefault(); e.stopPropagation(); copiar(txt); }},
+        [document.createTextNode("copiar")])
+    ]));
+    d.appendChild(el("div",{class:"scriptbox",style:destaque?"border-left:3px solid var(--accent)":"",text:txt}));
+    return d;
+  }  function sub(t){ return el("div",{class:"eyebrow",style:"margin:12px 0 7px",text:t}); }
   var eu=nomeReal(nomeVend(dono));
   var venc=vencimento(reg);
   var atrasado=venc&&diasDesde(venc)>=0;
   var prevista=somaDias(HOJE,2);
 
-  /* ---- PASSO 1: abrir a conversa ---- */
-  var p1;
-  if(wa){
-    p1=passo(1,"Abra a conversa no WhatsApp",
-      "Clique no botão verde. O WhatsApp abre já com a mensagem escrita. Você só confere e aperta enviar.",
-      el("div",{class:"acts",style:"margin-top:7px"},[
-        el("a",{class:"btn primary",href:wa,target:"_blank",rel:"noopener",
-          onclick:function(){ if(st==="novo") salvarReg(l.id,{s:"contatado",m:"contatado",d:HOJE},dono); }},
-          [document.createTextNode("Chamar "+l.empresa+" no WhatsApp")])
-      ]));
-  } else {
-    p1=passo(1,"Pegue o contato desta empresa",
-      "Esta empresa veio sem telefone. Clique em \"Abrir no Facebook\" ali embaixo, procure o WhatsApp ou o Instagram dela na página, e chame por lá. Leva uns 10 segundos.",
-      el("div",{class:"acts",style:"margin-top:7px"},[
-        el("a",{class:"btn primary",href:fb,target:"_blank",rel:"noopener"},
-          [document.createTextNode("Abrir a página no Facebook")]),
-        ig?el("a",{class:"btn",href:ig,target:"_blank",rel:"noopener"},
-          [document.createTextNode("Abrir o Direct")]):null
-      ]));
-  }
-
-  /* ---- PASSO 2: mandar a mensagem ---- */
-  var p2=passo(2,"Envie exatamente esta mensagem",
-    "Copie do jeito que está. Não mande áudio, não mande foto, não acrescente frase nenhuma. Só troque o nome se você quiser usar apelido.",
-    el("div",{style:"margin-top:7px"},[
-      caixa(mA,true),
-      el("div",{style:"margin-top:9px"},[
-        el("div",{class:"eyebrow",text:"Se for pelo Direct do Instagram, use esta (mais curta)"}),
-        caixa(mC)
-      ])
-    ]));
-
+  /* ---- contato: os botoes de abrir a conversa e o site, logo abaixo da classificacao ---- */
+  var contato=el("div",{class:"cardbox full"},[
+    el("div",{class:"cb-head"},[
+      el("b",{text:wa?"Abra a conversa no WhatsApp":"Pegue o contato desta empresa"}),
+      el("span",{text:wa
+        ? "O botão verde abre o WhatsApp já com a mensagem escrita. Você só confere e aperta enviar."
+        : "Esta empresa veio sem telefone. Abra a página no Facebook, ache o WhatsApp ou o Instagram dela e chame por lá. Leva uns 10 segundos."})
+    ]),
+    el("div",{class:"acts"},[
+      wa?el("a",{class:"btn primary",href:wa,target:"_blank",rel:"noopener",
+        onclick:function(){ if(st==="novo") salvarReg(l.id,{s:"contatado",m:"contatado",d:HOJE},dono); }},
+        [document.createTextNode("Chamar "+l.empresa+" no WhatsApp")]):null,
+      el("a",{class:wa?"btn":"btn primary",href:fb,target:"_blank",rel:"noopener"},
+        [document.createTextNode("Abrir a página no Facebook")]),
+      ig?el("a",{class:"btn",href:ig,target:"_blank",rel:"noopener"},
+        [document.createTextNode("Abrir o Direct")]):null,
+      el("a",{class:"btn",href:ads,target:"_blank",rel:"noopener"},
+        [document.createTextNode("Ver os anúncios dele")])
+    ]),
+    linhaSite(souDanilo)
+  ]);
   /* ---- PASSO 3: parar e esperar ---- */
   var dr=dataReuniao(reg), ddr=dr?diasDesde(dr.iso):null;
   var vesperaVez=(ddr===-1), diaVez=(ddr===0);
   function prazoTexto(){
     if(reg.s==="reuniao"){
       if(!dr) return "Reunião marcada — escreva na anotação o dia e a hora (ex.: 15/09 14h) pra eu te lembrar da confirmação.";
-      if(vesperaVez) return "Reunião amanhã, "+dataBR(dr.iso)+(dr.hora?" às "+dr.hora:"")+" — mande a confirmação da véspera hoje (passo 4).";
-      if(diaVez) return "Reunião HOJE"+(dr.hora?" às "+dr.hora:"")+" — mande o aviso de uma hora antes (passo 4).";
+      if(vesperaVez) return "Reunião amanhã, "+dataBR(dr.iso)+(dr.hora?" às "+dr.hora:"")+" — mande a confirmação da véspera hoje (o texto está em “Marcando a reunião”).";
+      if(diaVez) return "Reunião HOJE"+(dr.hora?" às "+dr.hora:"")+" — mande o aviso de uma hora antes (o texto está em “Marcando a reunião”).";
       if(ddr<-1) return "Reunião marcada pra "+dataBR(dr.iso)+(dr.hora?" às "+dr.hora:"")+" — confirme na véspera.";
       return "A reunião foi dia "+dataBR(dr.iso)+". Marque o que aconteceu no alto do cartão.";
     }
@@ -1766,11 +1816,7 @@ function corpo(l,dono,st){
     if(venc) return "Você falou com ele dia "+dataBR(reg.d)+" — próximo toque dia "+dataBR(venc);
     return "Você falou com ele dia "+dataBR(reg.d);
   }
-  var p3=passo(3,"Agora pare. Não mande mais nada hoje.",
-    "Mandar duas mensagens seguidas derruba a chance de resposta. Volte para a lista e vá para o próximo lead.",
-    el("div",{style:"margin-top:7px"},[
-      el("span",{class:"prazo"+((atrasado||vesperaVez||diaVez)?" venceu":""),text:prazoTexto()})
-    ]));
+  var prazoEl=el("span",{class:"prazo"+((atrasado||vesperaVez||diaVez)?" venceu":""),text:prazoTexto()});
 
   /* ---- PASSO 4: o que fazer conforme a resposta ---- */
   var fupVenceu = !!(atrasado && reg.s==="contatado" && reg.m!=="recepcao");
@@ -1815,14 +1861,34 @@ function corpo(l,dono,st){
     seEle("Já investi e não deu em nada",TXT_QUEIMOU),
     seEle("Quanto custa? (nunca passe valor — se o “vou pensar” for por valor, use esta)",TXT_PRECO),
     seEle("Pediu pra não chamar mais — responda só isto e marque “Pediu pra não contatar”",TXT_PARAR),
-    sub("Sem resposta"),
-    seEle((fupVenceu?"VENCEU — mande hoje o follow-up 1":"Se ele NÃO responder até "+dataBR(reg.d?venc:prevista)+" — follow-up 1"),txtFup1(vn),fupVenceu),
-    seEle((fup2Vez?"Agora é a última — follow-up 2":"Se continuar sem resposta 3 dias depois — follow-up 2, a última"),TXT_FUP2,fup2Vez),
-    seEle((sumiuVez?"VENCEU — ele respondeu e sumiu, mande hoje":"Se ele respondeu e sumiu (2 dias depois)"),TXT_SUMIU,sumiuVez)
+    null
   ]);
-  var p4=passo(4,"O que fazer conforme ele responder",
-    (souDanilo?"Os textos abaixo já estão na sua voz, em primeira pessoa. ":"")+"Ache abaixo a situação que aconteceu e cole o texto correspondente. Não invente resposta.",respostas);
-
+  /* Todas as mensagens ficam logo abaixo da classificacao e do contato (21/09).
+     Abertura e follow-ups vem primeiro, que e o que o vendedor mais copia, e o
+     texto da vez ja vem aberto: a abertura no lead novo, o follow-up certo depois. */
+  var ehNovo=(st==="novo");
+  var mensagens=el("div",{class:"cardbox full"},[
+    el("div",{class:"cb-head"},[
+      el("b",{text:"Mensagens prontas — copie e cole"}),
+      el("span",{text:(souDanilo?"Os textos já estão na sua voz, em primeira pessoa. ":"")+
+        "Toque no título pra ler o texto, ou direto em “copiar”. Mande do jeito que está: sem áudio, sem foto, sem frase a mais. Mandou? Classifique lá em cima e pare — duas mensagens seguidas derrubam a chance de resposta."}),
+      el("button",{class:"copiar",onclick:function(){
+        var ds=mensagens.querySelectorAll("details"), abrir=false, i;
+        for(i=0;i<ds.length;i++) if(!ds[i].open){ abrir=true; break; }
+        for(i=0;i<ds.length;i++) ds[i].open=abrir;
+      }},[document.createTextNode("abrir / fechar todos os textos")])
+    ]),
+    el("div",{class:"msgcols"},[
+      el("div",{class:"eyebrow",text:"Abertura — a primeira mensagem"}),
+      seEle("Pelo WhatsApp",mA,false,ehNovo),
+      seEle("Pelo Direct do Instagram (mais curta)",mC,false,ehNovo),
+      el("div",{class:"eyebrow",text:"Sem resposta — follow-ups"}),
+      seEle((fupVenceu?"VENCEU — mande hoje o follow-up 1":"Se ele NÃO responder até "+dataBR(reg.d?venc:prevista)+" — follow-up 1"),txtFup1(vn),fupVenceu,st==="contatado"&&reg.m!=="recepcao"),
+      seEle((fup2Vez?"Agora é a última — follow-up 2":"Se continuar sem resposta 3 dias depois — follow-up 2, a última"),TXT_FUP2,fup2Vez),
+      seEle((sumiuVez?"VENCEU — ele respondeu e sumiu, mande hoje":"Se ele respondeu e sumiu (2 dias depois)"),TXT_SUMIU,sumiuVez,st==="conversa"||st==="fup2"),
+      respostas
+    ])
+  ]);
   var nota=el("textarea",{placeholder:"Escreva aqui o que ele respondeu, com suas palavras…",
     onchange:function(e){salvarReg(l.id,{o:e.target.value},dono,true);toast("Anotação salva")}});
   nota.value=reg.o||"";
@@ -1831,25 +1897,22 @@ function corpo(l,dono,st){
     el("b",{text:"Reunião marcada — falta dia e hora"}),
     el("div",{text:"Escreva na anotação abaixo: dia e hora (ex.: 15/09 14h), com quem, e o que ele respondeu. É daí que o Radar te lembra da confirmação na véspera e no dia."})
   ]):null;
-  /* A classificacao fica no alto do cartao; o passo 5 la embaixo so aponta pra ela. */
-  var topoClass=el("div",{class:"classtopo",id:"classtopo"},[
+  /* A classificacao fica no alto do cartao. Depois de marcar, a faixa verde
+     confirma o que ficou gravado (o "check" que o time pedia). */
+  var motAtual=reg.m?MOTIVO_POR_ID[reg.m]:null;
+  var situacao=el("div",{class:"ct-sit"},[
+    (st!=="novo")?el("span",{class:"ct-ok",text:"✓ Marcado: "+(motAtual?motAtual.rot:STATUS[st].r)+(reg.d?" · "+dataBR(reg.d):"")}):null,
+    (st!=="novo")?prazoEl:null
+  ]);
+  var topoClass=el("div",{class:"classtopo full",id:"classtopo"},[
     el("div",{class:"ct-head"},[
       el("b",{text:"Como ficou esta conversa?"}),
       el("span",{text:souDanilo
         ? "Mandou a mensagem ou ele respondeu? Um clique guarda o resultado na sua fila e no histórico."
         : "Mandou a mensagem ou ele respondeu? Um clique aqui guarda o resultado e avisa o Danilo."})
     ]),
-    clas,dicaReuniao,nota
+    situacao,clas,dicaReuniao,nota
   ]);
-  var p5=passo(5,"Marque o que aconteceu",
-    "A classificação fica no alto deste cartão, logo abaixo do nome da empresa. Sem ela, o lead some do seu controle.",
-    el("div",{class:"acts",style:"margin-top:7px"},[
-      el("button",{class:"btn",onclick:function(){
-        var t=document.getElementById("classtopo");
-        if(t&&t.scrollIntoView) t.scrollIntoView({behavior:"smooth",block:"center"});
-      }},[document.createTextNode("Subir para classificar")])
-    ]));
-
   var det=el("dl",{class:"kv"},[
     el("dt",{text:"Sinal no anúncio (só pra você — não fale disso pro cliente)"}), el("dd",{text:l.gancho||"—"}),
     el("dt",{text:"WhatsApp"}), el("dd",{},[l.wa?el("span",{class:"mono",text:l.wa}):document.createTextNode("pegar na página")]),
@@ -1873,20 +1936,18 @@ function corpo(l,dono,st){
     ]);
   }
 
+  /* Ordem do cartao (21/09): aviso de lead herdado, classificacao, contato +
+     site, todas as mensagens (abertura, follow-ups e respostas) e os dados. */
   return el("div",{class:"rbody"},[
+    avisoHerd?el("div",{class:"full"},[avisoHerd]):null,
     topoClass,
-    el("div",{class:"block"},[
-      avisoHerd,
-      el("div",{class:"eyebrow",text:"Roteiro — siga na ordem"}),
-      p1,p2,p3
-    ]),
-    el("div",{class:"block"},[
-      p4,p5,
-      el("div",{class:"eyebrow",style:"margin-top:6px",text:"Dados da empresa"}), det
+    contato,
+    mensagens,
+    el("div",{class:"cardbox full"},[
+      el("div",{class:"cb-head"},[el("b",{text:"Dados da empresa"})]), det
     ])
   ]);
 }
-
 /* ---------- VIEW: follow-ups ---------- */
 function viewFollowups(main){
   var v=STATE.vend;
@@ -1905,7 +1966,7 @@ function viewFollowups(main){
   }
   main.appendChild(el("div",{class:"regra",style:"margin-bottom:14px"},[
     el("b",{text:arr.length+" follow-up(s) vencido(s)"}),
-    el("div",{text:"Abra cada um, vá no PASSO 4 e cole o texto de follow-up. Não precisa inventar nada."})
+    el("div",{text:"Abra cada um: o follow-up da vez já vem aberto em “Mensagens prontas”. Copie, mande e classifique no alto do cartão. Não precisa inventar nada."})
   ]));
   var lista=el("div",{class:"rows"});
   arr.forEach(function(l){lista.appendChild(linha(l,v))});
@@ -2027,6 +2088,12 @@ function viewScripts(main){
     el("div",{html:"<b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>1.</b> Você não vende, você marca reunião. O Danilo apresenta valor, você não. "+
       "<br><b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>2.</b> Se perguntarem preço, dê só a régua: fica na faixa de contratar um CLT. Nunca um número."+
       "<br><b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>3.</b> Nunca diga que o anúncio tem erro ou defeito. Nada de print — o que vai é o site do Danilo."})
+  ]));
+
+  main.appendChild(el("div",{class:"panel"},[
+    el("h2",{text:"Site do Danilo"}),
+    el("p",{class:"hint",text:"É o link que vai nas mensagens. Copie daqui sempre que precisar mandar."}),
+    linhaSite(!!(STATE.vend&&STATE.vend.gestor))
   ]));
 
   BIBLIOTECA.forEach(function(s,i){
@@ -2492,6 +2559,7 @@ function gravarLocal(vid){ espelhoLocal(vid); }
 
 /* ---------- fila de envio ---------- */
 var FILA = [];
+var FILA_DESDE = 0;   /* quando a fila deixou de estar vazia (para o aviso de fila parada) */
 function lerFila(){
   try{ FILA = JSON.parse(localStorage.getItem("radar_fila")||"[]") || []; }catch(e){ FILA = []; }
   STATE.pend = FILA.length;
@@ -2501,6 +2569,7 @@ function gravarFila(){
   STATE.pend = FILA.length;
 }
 function enfileirar(vid, leadId, reg){
+  if(!FILA.length) FILA_DESDE = Date.now();
   FILA = FILA.filter(function(x){ return !(x.vend===vid && x.lead===leadId); });
   FILA.push({
     vend: vid, lead: leadId,
@@ -2555,12 +2624,15 @@ function escoar(){
     ESCOANDO = false;
     DIAG.escritaOk = true; DIAG.escritaErro = ""; DIAG.enviadoAs = horaAgora();
     STATE.sync = FILA.length ? "pendente" : "ok";
+    if(!FILA.length) FILA_DESDE = 0;
     pintarSync();
+    /* se o aviso vermelho estava na tela, sai assim que a fila esvazia */
+    if(!FILA.length && document.querySelector("main > .alerta")) pedirRender();
     if(FILA.length) escoar();
   }).catch(function(e){
     ESCOANDO = false;
     DIAG.escritaOk = false; DIAG.escritaErro = e.message;
-    STATE.sync = "pendente"; pintarSync();
+    STATE.sync = "pendente"; pintarSync(); pedirRender();
     if(window.console && console.warn) console.warn("[radar] nao consegui enviar agora: " + e.message);
   });
 }
@@ -3089,6 +3161,7 @@ function viewHistorico(main){
 /* ---------- boot ---------- */
 READY = true;
 lerFila();
+if(FILA.length) FILA_DESDE = Date.now();
 lerFilaH();
 lerEspelho();
 
@@ -3120,7 +3193,7 @@ carregarLeadsNuvem().then(function(trocou){
 
 if(typeof window !== "undefined"){
   window.addEventListener("online", function(){ escoar(); escoarH(); });
-  setInterval(function(){ if(FILA.length) escoar(); if(FILA_H.length) escoarH(); }, 20000);
+  setInterval(function(){ if(FILA.length){ escoar(); pedirRender(); } if(FILA_H.length) escoarH(); }, 20000);
   /* se a pagina passar a virada do dia aberta, o contador de hoje vira junto */
   setInterval(function(){
     var h = dataLocal();
