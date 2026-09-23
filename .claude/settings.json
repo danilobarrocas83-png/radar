@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 scripts/remessa_cnpj.py:*)",
+      "Bash(mkdir -p saida:*)",
+      "Bash(cat saida/resumo.txt:*)",
+      "Bash(cp saida/radar.html radar.html:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(git show:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(md5sum:*)",
+      "Bash(node:*)"
+    ]
+  }
+}
