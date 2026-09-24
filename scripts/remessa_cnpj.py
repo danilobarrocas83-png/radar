@@ -112,7 +112,8 @@ def main():
     ap.add_argument("--key", default=None, help="chave hex do pool")
     ap.add_argument("--key-file", default=None, help="arquivo com a chave hex (alternativa a --key)")
     ap.add_argument("--data", default=None)
-    ap.add_argument("--por-fila", type=int, default=50)
+    ap.add_argument("--por-fila", type=int, default=None,
+                    help="leads novos por fila; sem valor, segue a cadencia da semana: seg/ter/qui 50, sex 25, qua 0")
     ap.add_argument("--pool", default="pool/candidatos*.enc*")
     ap.add_argument("--usados", default="pool/usados.txt")
     ap.add_argument("--proximo-id", default="pool/proximo_id.txt")
@@ -129,6 +130,12 @@ def main():
         raise SystemExit("chave do pool ausente ou invalida: passe --key <64 hex> ou --key-file <arquivo>")
 
     hoje = a.data or hoje_fortaleza()
+    # Cadencia da semana (pedido do Danilo, 24/09): seg, ter e qui = 50 novos por fila;
+    # QUARTA = nenhum lead novo (dia de follow-up geral); SEXTA = 25 novos (+ 25 follow-ups na tela).
+    dia_semana = datetime.strptime(hoje, "%Y-%m-%d").weekday()  # 0=seg ... 4=sex, 5=sab, 6=dom
+    if a.por_fila is None:
+        a.por_fila = 50 if dia_semana in (0, 1, 3) else (25 if dia_semana == 4 else 0)
+    nome_dia = ["segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo"][dia_semana]
     with open(a.html, "r", encoding="utf-8") as f:
         html = f.read()
     if html.count("<!doctype html>") != 1 or html.count("</body></html>") != 1:
@@ -307,7 +314,7 @@ def main():
         if c["wa"]:
             com_wa += 1
 
-    manter_datas = datas[-2:]
+    manter_datas = datas[-4:]  # os 4 lotes mais recentes = a semana inteira (seg, ter, qui, sex) fica no radar
     mantidos = [l for l in leads if str(l.get("loteData", "")) in manter_datas]
     lista = mantidos + novos
     # O codigo do radar (CSS/JS depois do </script> dos leads) vive no repositorio, em scripts/radar_codigo.html:
@@ -332,16 +339,19 @@ def main():
         e = h.rfind("</body>")
         return h[b + len("<body>"):e]
 
-    if ja_tem_hoje:
-        # Remessa de hoje ja existe: nao mexe nos leads. Mas se o codigo do radar mudou em relacao ao
-        # radar.html do repositorio, grava a mesma base com o codigo novo e sai com codigo 4
-        # (a rotina publica artifact + GitHub sem gerar planilhas).
+    if ja_tem_hoje or a.por_fila == 0:
+        # Sem lote novo hoje (remessa ja existe, ou e quarta/fim de semana): nao mexe nos leads. Mas se o
+        # codigo do radar mudou em relacao ao radar.html do repositorio, grava a mesma base com o codigo
+        # novo e sai com codigo 4 (a rotina publica artifact + GitHub sem gerar planilhas).
         html_rep = aplica_codigo(html)
         atual = None
         if a.repo_html and os.path.exists(a.repo_html):
             with open(a.repo_html, "r", encoding="utf-8") as f:
                 atual = f.read()
-        print("data=%s: JA EXISTE remessa com loteData=%s no HTML (%d leads embutidos, lotes %s)." % (hoje, hoje, len(leads), datas))
+        if ja_tem_hoje:
+            print("data=%s (%s): JA EXISTE remessa com loteData=%s no HTML (%d leads embutidos, lotes %s)." % (hoje, nome_dia, hoje, len(leads), datas))
+        else:
+            print("data=%s (%s): DIA SEM REMESSA pela cadencia da semana (quarta = follow-up geral; fim de semana). %d leads embutidos, lotes %s." % (hoje, nome_dia, len(leads), datas))
 
         def linhas_uteis(h):
             return "\n".join(ln for ln in h.replace("\r", "").split("\n") if ln.strip())
@@ -356,15 +366,18 @@ def main():
                 f.write("SO CODIGO: remessa de %s mantida (%d leads); radar.html do repositorio difere do codigo atual (%s). Publicar artifact + GitHub, sem planilhas.\n" % (hoje, len(leads), codigo_usado[0]))
             print("SO CODIGO MUDOU: gravei saida/radar.html e saida/radar_nuvem.html com os mesmos %d leads e o codigo %s. Publique artifact + GitHub, sem planilhas (saida 4)." % (len(leads), codigo_usado[0]))
             sys.exit(4)
-        print("Nada a fazer: nem leads novos nem codigo diferente do repositorio (saida 3).")
-        sys.exit(3)
+        if ja_tem_hoje:
+            print("Nada a fazer: nem leads novos nem codigo diferente do repositorio (saida 3).")
+            sys.exit(3)
+        print("Nada a publicar hoje: dia de follow-up, sem lead novo e sem codigo diferente do repositorio (saida 5).")
+        sys.exit(5)
 
     arr = json.dumps(lista, ensure_ascii=False, separators=(",", ":"))
     html_novo = aplica_codigo(html[:l_ini] + arr + html[l_fim:])
     artifact = sem_involucro(html_novo)
 
     resumo = []
-    resumo.append("data=%s filas=%d por_fila=%d" % (hoje, len(filas), a.por_fila))
+    resumo.append("data=%s (%s) filas=%d por_fila=%d  [cadencia: seg/ter/qui 50 novos, qua follow-up geral (0), sex 25 novos + 25 follow-ups]" % (hoje, nome_dia, len(filas), a.por_fila))
     resumo.append("candidatos no pool=%d, apos dedupe=%d" % (len(pool), len(cand)))
     resumo += log
     resumo.append("novos=%d comWhatsApp=%d ids %d..%d" % (len(novos), com_wa, proximo, num - 1))

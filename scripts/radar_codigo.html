@@ -399,6 +399,8 @@ function dataLocal(dt){
          ("0"+dt.getDate()).slice(-2);
 }
 var HOJE = dataLocal();
+/* quarta-feira e dia de follow-up geral (24/09): a tela abre no filtro de follow-ups */
+if(diaSemana()===3) STATE.filtro="fup";
 
 var STATUS={
   novo:{r:"Não contatado",k:"novo"},
@@ -536,6 +538,8 @@ function anuncioDe(nicho){
 /* Leads que vieram do cadastro de empresas (CNPJ), desde 23/09: a gente nao
    sabe se anunciam. Nada de "vi o anuncio de voces" — a abertura pergunta. */
 function semAnuncio(l){ return !!(l&&(l.fonte==="cnpj"||!l.pageId)); }
+/* "Sou a Viviane" / "Sou o Herculano": as vendedoras da equipe. Se entrar outra, acrescente aqui. */
+function souNome(eu){ return (/^(viviane|isabel|malu)$/i.test(String(eu||""))?"Sou a ":"Sou o ")+eu; }
 /* 23/09 (pedido do Danilo): a pergunta vem primeiro, sem citar a empresa, e a
    apresentacao fica no fim - mais humano, menos vendedor. */
 var PERGUNTA_ANUNCIA="Oi, tudo bem?\nHoje você ainda depende de indicação, ou já investe em anúncio mas chega só lead desqualificado?";
@@ -665,7 +669,7 @@ function msgWhats(l,vendNome,souDanilo){
          "Sou o Danilo! Estrategista digital e especialista em tráfego pago, ajudo empresas a faturarem mais usando anúncio online.\n\n"+
          "Esse é o meu site, caso você queira aumentar seu faturamento:\n"+SITE_DANILO;
     return PERGUNTA_ANUNCIA+"\n\n"+
-         "Sou o "+eu+", do time do Danilo!\n"+
+         souNome(eu)+", do time do Danilo!\n"+
          "Ele é estrategista digital e especialista em tráfego pago, ajuda empresas a faturarem mais usando anúncio online.\n\n"+
          "Esse é o nosso site, caso você queira aumentar seu faturamento:\n"+SITE_DANILO;
   }
@@ -686,7 +690,7 @@ function msgDirect(l,vendNome,souDanilo){
          "Sou o Danilo! Estrategista digital e especialista em tráfego pago, ajudo empresas a faturarem mais usando anúncio online.\n\n"+
          "Esse é o meu site, caso você queira aumentar seu faturamento:\n"+SITE_DANILO;
     return PERGUNTA_ANUNCIA_CURTA+"\n\n"+
-         "Sou o "+eu+", do time do Danilo!\n"+
+         souNome(eu)+", do time do Danilo!\n"+
          "Ele é estrategista digital e especialista em tráfego pago, ajuda empresas a faturarem mais usando anúncio online.\n\n"+
          "Esse é o nosso site, caso você queira aumentar seu faturamento:\n"+SITE_DANILO;
   }
@@ -1043,6 +1047,116 @@ function ultimaData(){
   var d="";
   STATE.lotes.forEach(function(x){ if(String(x.data||"")>d) d=String(x.data||""); });
   return d;
+}
+/* ---------- cadencia da semana (pedido do Danilo, 24/09) ----------
+   seg, ter e qui: 50 leads novos por fila. QUARTA: nenhum lead novo - dia de
+   follow-up geral, todo mundo retoma o que ficou parado. SEXTA: 25 leads novos
+   + 25 follow-ups da semana. A rotina da madrugada segue o mesmo calendario;
+   aqui a tela conta, filtra e explica. */
+function diaSemana(){ return new Date(HOJE+"T12:00:00").getDay(); }
+function modoDoDia(){
+  var d=diaSemana();
+  if(d===3) return "followup";
+  if(d===5) return "misto";
+  if(d===0||d===6) return "fim";
+  return "novos";
+}
+function cotaNovosDia(base){ var m=modoDoDia(); if(m==="followup"||m==="fim") return 0; if(m==="misto") return Math.round(base/2); return base; }
+function cotaFupDia(base){ var m=modoDoDia(); if(m==="followup") return base; if(m==="misto") return base-Math.round(base/2); return 0; }
+/* "Remessa de hoje" e o lote com a data de HOJE. Sem lote hoje (quarta, fim de
+   semana ou rotina atrasada) nao ha remessa de hoje - antes a tela chamava o
+   ultimo lote de "hoje", o que na quarta seria mentira. */
+function dataRemessaHoje(){
+  var tem=false;
+  STATE.lotes.forEach(function(x){ if(String(x.data||"")===HOJE) tem=true; });
+  return tem?HOJE:"";
+}
+/* toques de hoje separados: no lote de hoje = contato novo; fora dele = follow-up */
+function toquesHoje(vid){
+  var m=STATE.atividade[vid]||{}, k, res={novos:0,fups:0,total:0};
+  var hoje=dataRemessaHoje(), lote={};
+  STATE.lotes.forEach(function(lo){ (lo.itens||[]).forEach(function(it){ lote[it.id]=String(lo.data||""); }); });
+  for(k in m){
+    if(!(m[k]&&m[k].d===HOJE)) continue;
+    res.total++;
+    if(hoje&&lote[k]===hoje) res.novos++; else res.fups++;
+  }
+  return res;
+}
+function textoDoDia(){
+  var m=modoDoDia();
+  if(m==="followup") return "QUARTA-FEIRA É DIA DE FOLLOW-UP GERAL: hoje não entra lead novo. Retome todo mundo que ficou parado na semana — os leads de segunda e terça que não responderam, os que responderam e sumiram, os que ficaram sem o segundo toque. A meta do dia são 50 follow-ups. Isso poupa o WhatsApp de número novo demais e faz a semana render mais.";
+  if(m==="misto") return "SEXTA-FEIRA: 25 leads novos + 25 follow-ups. Primeiro a remessa de hoje (25 novos); depois complete o dia com 25 follow-ups dos leads da semana. Os dois contadores ao lado mostram cada metade.";
+  if(m==="fim") return "Fim de semana: sem remessa. Segunda volta com 50 leads novos.";
+  return "";
+}
+
+/* ---------- modo sequencia (24/09, pedido do Danilo) ----------
+   A primeira mensagem, um lead por vez: o vendedor aperta o botao, o WhatsApp
+   abre com o texto pronto, ele manda (Enter), volta, e o proximo lead ja esta
+   na tela. Quem envia e a pessoa - o radar so organiza a fila, marca
+   "contatado" e segura um intervalo minimo entre envios, que e o que protege
+   o numero contra bloqueio. Nada e disparado sozinho. */
+var SEQ_INTERVALO=30; /* segundos entre um envio e o proximo */
+var SEQ_TIMER=null;
+function seqChave(){ return "radar_seq_"+(STATE.vend?STATE.vend.id:"")+"_"+HOJE; }
+function seqLer(){
+  try{ var s=JSON.parse(localStorage.getItem(seqChave())||"null"); if(s&&typeof s==="object") return s; }catch(e){}
+  return null;
+}
+function seqGravar(s){ try{ if(s) localStorage.setItem(seqChave(),JSON.stringify(s)); else localStorage.removeItem(seqChave()); }catch(e){} }
+/* quem ainda espera a primeira mensagem: status "novo", com WhatsApp; se ha
+   remessa hoje, so a de hoje; se nao ha (quarta), os nao contatados da base */
+function seqLista(proprio){
+  var hoje=dataRemessaHoje(), s=seqLer(), pulados=(s&&s.pulados)||[];
+  var base=(proprio?filaPropria():meusLeads()).filter(function(l){
+    if(!l.wa) return false;
+    if(statusDe(donoDoLead(l),l.id)!=="novo") return false;
+    if(hoje&&String(l.loteData||"")!==hoje) return false;
+    return pulados.indexOf(l.id)<0;
+  });
+  return ordenar(base);
+}
+function seqIniciar(){ seqGravar({ativo:true,ultimo:0,pulados:[]}); render(); }
+function seqSair(){ seqGravar(null); if(SEQ_TIMER){clearTimeout(SEQ_TIMER);SEQ_TIMER=null;} render(); }
+function seqPular(id){ var s=seqLer()||{ativo:true,ultimo:0,pulados:[]}; s.pulados=(s.pulados||[]).concat([id]); seqGravar(s); render(); }
+function seqPainel(proprio){
+  var v=STATE.vend, s=seqLer()||{ativo:true,ultimo:0,pulados:[]};
+  var fila=seqLista(proprio), l=fila[0], t=toquesHoje(v.id);
+  var cab=el("div",{class:"cb-head"},[
+    el("b",{text:"Modo sequência — primeira mensagem, um lead por vez"}),
+    el("span",{text:"Toques hoje: "+t.total+". Faltam "+fila.length+" na sequência. Aperte o botão verde, mande no WhatsApp (Enter), volte pra cá: o próximo já estará aqui."})
+  ]);
+  if(!l){
+    return el("div",{class:"cardbox full",style:"margin:0 0 12px"},[cab,
+      el("div",{class:"empty",text:(dataRemessaHoje()?"Você mandou a primeira mensagem pra toda a remessa de hoje. ":"Não há lead novo com WhatsApp esperando a primeira mensagem. ")+"Agora é follow-up: use o filtro Follow-ups."}),
+      el("div",{class:"acts"},[el("button",{class:"btn",onclick:seqSair},[document.createTextNode("Sair do modo sequência")])])
+    ]);
+  }
+  var dono=donoDoLead(l), souD=ehGestor(dono), msg=msgWhats(l,nomeVend(dono),souD), link=waLink(l.wa,msg);
+  var agora=Date.now(), falta=Math.ceil((SEQ_INTERVALO*1000-(agora-(s.ultimo||0)))/1000);
+  var esperar=falta>0&&falta<=SEQ_INTERVALO;
+  if(esperar){ if(SEQ_TIMER) clearTimeout(SEQ_TIMER); SEQ_TIMER=setTimeout(function(){SEQ_TIMER=null;render();},Math.min(falta,5)*1000); }
+  var botao=esperar
+    ? el("button",{class:"btn",disabled:"disabled",style:"opacity:.6"},[document.createTextNode("Aguarde "+falta+" s antes do próximo (protege o número)")])
+    : el("a",{class:"btn primary",href:link,target:"_blank",rel:"noopener",onclick:function(){
+        salvarReg(l.id,{s:"contatado",m:"contatado",d:HOJE},dono,true);
+        var s2=seqLer()||{ativo:true,ultimo:0,pulados:[]}; s2.ultimo=Date.now(); seqGravar(s2);
+        toast("Marcado como contatado — mande no WhatsApp e volte");
+        setTimeout(render,300);
+      }},[document.createTextNode("Abrir no WhatsApp com a mensagem pronta")]);
+  return el("div",{class:"cardbox full",style:"margin:0 0 12px;border-left:4px solid var(--accent)"},[cab,
+    el("div",{class:"eyebrow",style:"margin-top:8px",text:"Lead da vez"}),
+    el("div",{},[el("b",{text:l.empresa}),el("span",{class:"meta",text:"  "+(l.nicho||"")+" · "+(l.cidade||"")+" · "+l.wa})]),
+    el("div",{class:"eyebrow",style:"margin-top:8px",text:"A mensagem que vai (já em "+(souD?"primeira pessoa":"seu nome")+")"}),
+    el("div",{class:"scriptbox",text:msg}),
+    el("div",{class:"acts",style:"margin-top:8px"},[
+      botao,
+      el("button",{class:"btn",onclick:function(){copiar(msg)}},[document.createTextNode("copiar texto")]),
+      el("button",{class:"btn",onclick:function(){seqPular(l.id)}},[document.createTextNode("Pular este")]),
+      el("button",{class:"btn",onclick:seqSair},[document.createTextNode("Sair da sequência")])
+    ])
+  ]);
 }
 /* Vendedor que saiu continua no cadastro: o historico dele (contatos,
    reunioes, classificacoes) e do time e nao pode sumir do painel. O que
@@ -1464,6 +1578,7 @@ function avisoListaVelha(){
   if(!STATE.vend || STATE.vend.gestor) return null;
   var d = new Date(), dia = d.getDay();      /* 0=domingo, 6=sabado */
   if(dia===0 || dia===6) return null;        /* fim de semana nao tem remessa */
+  if(modoDoDia()==="followup") return null;  /* quarta nao tem remessa: e dia de follow-up */
   var ult = ultimaData();
   if(!ult || ult >= dataLocal()) return null;
   return el("div",{class:"alerta"},[
@@ -1642,36 +1757,74 @@ var ICONES={
 function viewLeads(main,proprio){
   var v=STATE.vend, meus=proprio?filaPropria():meusLeads();
   var reps=ativos();
-  var cota, feitos, timeTodo=!!(v.gestor&&!proprio);
+  var cota, feitos, timeTodo=!!(v.gestor&&!proprio), modo=modoDoDia();
+  var tq={novos:0,fups:0,total:0};
   if(timeTodo){
     cota=reps.reduce(function(a,p){return a+(p.cota||50)},0)||1;
-    feitos=reps.reduce(function(a,p){return a+contatadosHoje(p.id)},0);
+    reps.forEach(function(p){ var t=toquesHoje(p.id); tq.novos+=t.novos; tq.fups+=t.fups; tq.total+=t.total; });
   } else {
     cota=v.cota||50;
-    feitos=contatadosHoje(v.id);
+    tq=toquesHoje(v.id);
   }
+  feitos=tq.total;
+  var cotaN=cotaNovosDia(cota), cotaF=cotaFupDia(cota);
   var pct=Math.min(100,Math.round(feitos/cota*100));
-  var hoje=ultimaData();
+  var hoje=dataRemessaHoje();
   var novosHoje=meus.filter(function(l){
-    return String(l.loteData||"")===hoje && statusDe(donoDoLead(l),l.id)==="novo"; }).length;
+    return hoje && String(l.loteData||"")===hoje && statusDe(donoDoLead(l),l.id)==="novo"; }).length;
+  var remessaTxt = hoje ? ("Remessa de hoje: "+novosHoje+" leads novos")
+                        : (modo==="followup" ? "Sem lead novo hoje: dia de follow-up" : "Sem remessa hoje");
+  var quotaBox;
+  if(modo==="misto"){
+    quotaBox=el("div",{class:"quota"},[
+      el("div",{},[el("div",{class:"eyebrow",text:"Novos hoje"}),
+        el("div",{class:"big"},[document.createTextNode(String(tq.novos)),el("s",{text:" / "+cotaN})])]),
+      el("div",{},[el("div",{class:"eyebrow",text:"Follow-ups hoje"}),
+        el("div",{class:"big"},[document.createTextNode(String(tq.fups)),el("s",{text:" / "+cotaF})])]),
+      el("div",{class:"bar"},[el("i",{class:pct>=100?"done":"",style:"width:"+pct+"%"})])
+    ]);
+  } else {
+    quotaBox=el("div",{class:"quota"},[
+      el("div",{},[el("div",{class:"eyebrow",text:modo==="followup"?"Follow-ups hoje":"Hoje"}),
+        el("div",{class:"big"},[document.createTextNode(String(feitos)),el("s",{text:" / "+cota})])]),
+      el("div",{class:"bar"},[el("i",{class:pct>=100?"done":"",style:"width:"+pct+"%"})])
+    ]);
+  }
 
   main.appendChild(el("div",{class:"page-head"},[
     el("div",{},[
       el("h1",{text:timeTodo?"Todos os leads":"Meus leads"}),
       el("p",{text:timeTodo
-        ? ("Visão do time inteiro. Remessa de hoje: "+novosHoje+" leads ainda não trabalhados, de "+meus.length+" na base. O nome do vendedor responsável aparece em cada linha.")
+        ? ("Visão do time inteiro. "+(hoje?("Remessa de hoje: "+novosHoje+" leads ainda não trabalhados, de "+meus.length+" na base."):(remessaTxt+", "+meus.length+" na base."))+" O nome do vendedor responsável aparece em cada linha.")
         : v.gestor
-        ? ("Sua fila pessoal, de segunda a sexta. Remessa de hoje: "+novosHoje+" leads novos, de "+meus.length+" na sua fila. Os textos do cartão já saem na sua voz, e o que você marcar aqui entra no ranking e no histórico como o dos vendedores.")
-        : ("Remessa de hoje: "+novosHoje+" leads novos. Seu objetivo em cada um é marcar 20 minutinhos entre o dono e o Danilo — você não apresenta valor.")})
+        ? ("Sua fila pessoal. "+remessaTxt+", de "+meus.length+" na sua fila. Os textos do cartão já saem na sua voz, e o que você marcar aqui entra no ranking e no histórico como o dos vendedores.")
+        : (remessaTxt+". Seu objetivo em cada um é marcar 20 minutinhos entre o dono e o Danilo — você não apresenta valor.")})
     ]),
-    el("div",{class:"quota"},[
-      el("div",{},[el("div",{class:"eyebrow",text:"Hoje"}),
-        el("div",{class:"big"},[document.createTextNode(String(feitos)),el("s",{text:" / "+cota})])]),
-      el("div",{class:"bar"},[el("i",{class:pct>=100?"done":"",style:"width:"+pct+"%"})])
-    ])
+    quotaBox
   ]));
+  var txtDia=textoDoDia();
+  if(txtDia) main.appendChild(el("div",{class:"regra",style:"margin:0 0 12px"},[
+    el("b",{text:modo==="followup"?"Hoje é dia de follow-up":(modo==="misto"?"Sexta: metade novos, metade follow-up":"Sem remessa")}),
+    el("div",{text:txtDia}),
+    el("div",{style:"margin-top:6px;font-size:12px;opacity:.85",text:"Semana: segunda, terça e quinta 50 leads novos · quarta follow-up geral · sexta 25 novos + 25 follow-ups."})
+  ]));
+  /* modo sequencia: so na fila propria (vendedor, ou o gestor em "Meus leads") */
+  if(!timeTodo){
+    var sq=seqLer();
+    if(sq&&sq.ativo) main.appendChild(seqPainel(proprio));
+    else {
+      var nSeq=seqLista(proprio).length;
+      main.appendChild(el("div",{class:"cardbox full",style:"margin:0 0 12px"},[
+        el("div",{class:"cb-head"},[
+          el("b",{text:"Modo sequência — a primeira mensagem, um lead por vez"}),
+          el("span",{text:nSeq+" leads com WhatsApp esperando a primeira mensagem. Você aperta um botão, manda no WhatsApp, volta, e o próximo já está aqui. Quem envia é você; o radar organiza, marca e segura "+SEQ_INTERVALO+" segundos entre um envio e outro pra proteger o número."})
+        ]),
+        el("div",{class:"acts"},[el("button",{class:nSeq?"btn primary":"btn",onclick:seqIniciar},[document.createTextNode(nSeq?"Começar a sequência":"Ver a sequência (nada pra enviar agora)")])])
+      ]));
+    }
+  }
 
-  var filtros=[["hoje","Remessa de hoje"],["novo","Não contatados"],["A","Quentes"],
+  var filtros=[["hoje","Remessa de hoje"],["fup","Follow-ups"],["novo","Não contatados"],["A","Quentes"],
                ["andamento","Em andamento"],["reuniao","Reuniões"],["todos","Todos"]];
   var fr=el("div",{class:"filters"});
   filtros.forEach(function(f){
@@ -1688,7 +1841,7 @@ function viewLeads(main,proprio){
 }
 
 function filtrar(arr){
-  var f=STATE.filtro,b=STATE.busca.trim().toLowerCase(),hoje=ultimaData();
+  var f=STATE.filtro,b=STATE.busca.trim().toLowerCase(),hoje=dataRemessaHoje();
   return arr.filter(function(l){
     /* o lead aberto continua visivel mesmo depois de classificado,
        para o vendedor ver a confirmacao antes de fechar */
@@ -1696,7 +1849,9 @@ function filtrar(arr){
     var s=statusDe(donoDoLead(l),l.id);
     /* a remessa de hoje mostra tambem o que ja foi trabalhado (vai pro fim,
        com o check): antes o lead sumia da lista e parecia nao ter sido marcado */
-    if(f==="hoje"&&String(l.loteData||"")!==hoje) return false;
+    if(f==="hoje"&&(!hoje||String(l.loteData||"")!==hoje)) return false;
+    /* follow-ups: quem ja foi tocado e esta na vez do proximo toque */
+    if(f==="fup"&&!precisaFollowup(donoDoLead(l),l.id)) return false;
     if(f==="novo"&&s!=="novo") return false;
     if(f==="A"&&l.prio!=="A") return false;
     if(f==="andamento"&&ABERTOS.indexOf(s)<0) return false;
@@ -1713,7 +1868,10 @@ function desenharLista(cont,v,proprio){
   var arr=ordenar(filtrar(proprio?filaPropria():meusLeads()));
   if(!arr.length){
     var msg="Nenhum lead com esse filtro. Troque o filtro acima.";
-    if(STATE.filtro==="hoje") msg="Você já trabalhou toda a remessa de hoje. Vá para Follow-ups, ou mude o filtro para “Não contatados” e pegue leads dos dias anteriores.";
+    if(STATE.filtro==="hoje") msg=dataRemessaHoje()
+      ? "Você já trabalhou toda a remessa de hoje. Vá para Follow-ups, ou mude o filtro para “Não contatados” e pegue leads dos dias anteriores."
+      : (modoDoDia()==="followup" ? "Hoje não tem lead novo: é dia de follow-up geral. Vá para o filtro Follow-ups." : "Sem remessa hoje. Vá para Follow-ups ou “Não contatados”.");
+    if(STATE.filtro==="fup") msg="Nenhum follow-up vencido agora. Vá para “Em andamento” (quem respondeu e ainda não fechou) ou “Não contatados” dos dias anteriores.";
     cont.appendChild(el("div",{class:"empty",text:msg}));
     return;
   }
