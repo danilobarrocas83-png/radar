@@ -5,7 +5,7 @@ remessa_cnpj.py — gera a remessa diária do Radar Comercial a partir do pool d
 (cadastro CNPJ da Receita Federal, já filtrado), sem tocar na Biblioteca de Anúncios.
 
 Uso (na raiz do repositório):
-  python3 scripts/remessa_cnpj.py --html <radar.html lido do artifact> --key <chave hex de 64 caracteres>
+  python3 scripts/remessa_cnpj.py --html <radar.html lido do artifact> --key-file <arquivo com a chave hex de 64 caracteres>
         [--data AAAA-MM-DD] [--por-fila 50] [--pool "pool/candidatos*.enc*"]
         [--usados pool/usados.txt] [--proximo-id pool/proximo_id.txt] [--saida saida]
 
@@ -15,7 +15,9 @@ Saídas (na pasta --saida):
   leads_novos.json  só os leads novos de hoje
   resumo.txt        contagens
 
-Códigos de saída: 0 = ok · 3 = já existe remessa com a data de hoje (nada foi gravado) · 1 = erro.
+Códigos de saída: 0 = ok · 3 = já existe remessa com a data de hoje e nada mudou (nada gravado)
+  · 4 = já existe remessa de hoje, mas o código do radar difere do radar.html do repositório: gravou
+    saida/radar.html e saida/radar_nuvem.html com os mesmos leads e o código novo (publicar, sem planilhas) · 1 = erro.
 O script só imprime contagens: nunca nomes, telefones ou e-mails.
 """
 import sys, os, re, json, hmac, hashlib, argparse, random, unicodedata
@@ -107,14 +109,24 @@ def le_pool(padrao, key_hex):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--html", required=True)
-    ap.add_argument("--key", required=True)
+    ap.add_argument("--key", default=None, help="chave hex do pool")
+    ap.add_argument("--key-file", default=None, help="arquivo com a chave hex (alternativa a --key)")
     ap.add_argument("--data", default=None)
     ap.add_argument("--por-fila", type=int, default=50)
     ap.add_argument("--pool", default="pool/candidatos*.enc*")
     ap.add_argument("--usados", default="pool/usados.txt")
     ap.add_argument("--proximo-id", default="pool/proximo_id.txt")
     ap.add_argument("--saida", default="saida")
+    ap.add_argument("--codigo", default="scripts/radar_codigo.html",
+                    help="codigo do radar (tudo depois do </script> dos leads); se existir, substitui o do HTML lido")
+    ap.add_argument("--repo-html", default="radar.html",
+                    help="radar.html atual do repositorio; usado para detectar mudanca so de codigo (saida 4)")
     a = ap.parse_args()
+    if not a.key and a.key_file:
+        with open(a.key_file, "r", encoding="utf-8") as f:
+            a.key = f.read().strip()
+    if not a.key or len(a.key) != 64:
+        raise SystemExit("chave do pool ausente ou invalida: passe --key <64 hex> ou --key-file <arquivo>")
 
     hoje = a.data or hoje_fortaleza()
     with open(a.html, "r", encoding="utf-8") as f:
@@ -298,11 +310,58 @@ def main():
     manter_datas = datas[-2:]
     mantidos = [l for l in leads if str(l.get("loteData", "")) in manter_datas]
     lista = mantidos + novos
+    # O codigo do radar (CSS/JS depois do </script> dos leads) vive no repositorio, em scripts/radar_codigo.html:
+    # e a fonte da verdade para mudancas de codigo. Se existir, substitui o codigo que veio no HTML do artifact.
+    codigo_usado = ["do HTML lido"]
+
+    def aplica_codigo(h):
+        if not (a.codigo and os.path.exists(a.codigo)):
+            return h
+        fim_leads = h.find("</script>", h.find("var LEADS_EMBUTIDOS="))
+        if fim_leads < 0:
+            raise SystemExit("nao achei o </script> dos leads")
+        with open(a.codigo, "r", encoding="utf-8") as f:
+            codigo = f.read()
+        if codigo.count("</body></html>") != 1 or "<script" not in codigo:
+            raise SystemExit("scripts/radar_codigo.html nao parece o codigo do radar (esperava 1 </body></html> e <script>)")
+        codigo_usado[0] = "de " + a.codigo + " (%d chars)" % len(codigo)
+        return h[:fim_leads + len("</script>")] + codigo
+
+    def sem_involucro(h):
+        b = h.find("<body>")
+        e = h.rfind("</body>")
+        return h[b + len("<body>"):e]
+
+    if ja_tem_hoje:
+        # Remessa de hoje ja existe: nao mexe nos leads. Mas se o codigo do radar mudou em relacao ao
+        # radar.html do repositorio, grava a mesma base com o codigo novo e sai com codigo 4
+        # (a rotina publica artifact + GitHub sem gerar planilhas).
+        html_rep = aplica_codigo(html)
+        atual = None
+        if a.repo_html and os.path.exists(a.repo_html):
+            with open(a.repo_html, "r", encoding="utf-8") as f:
+                atual = f.read()
+        print("data=%s: JA EXISTE remessa com loteData=%s no HTML (%d leads embutidos, lotes %s)." % (hoje, hoje, len(leads), datas))
+
+        def linhas_uteis(h):
+            return "\n".join(ln for ln in h.replace("\r", "").split("\n") if ln.strip())
+
+        if atual is not None and linhas_uteis(atual) != linhas_uteis(html_rep):
+            os.makedirs(a.saida, exist_ok=True)
+            with open(os.path.join(a.saida, "radar.html"), "w", encoding="utf-8", newline="\n") as f:
+                f.write(html_rep)
+            with open(os.path.join(a.saida, "radar_nuvem.html"), "w", encoding="utf-8", newline="\n") as f:
+                f.write(sem_involucro(html_rep))
+            with open(os.path.join(a.saida, "resumo.txt"), "w", encoding="utf-8") as f:
+                f.write("SO CODIGO: remessa de %s mantida (%d leads); radar.html do repositorio difere do codigo atual (%s). Publicar artifact + GitHub, sem planilhas.\n" % (hoje, len(leads), codigo_usado[0]))
+            print("SO CODIGO MUDOU: gravei saida/radar.html e saida/radar_nuvem.html com os mesmos %d leads e o codigo %s. Publique artifact + GitHub, sem planilhas (saida 4)." % (len(leads), codigo_usado[0]))
+            sys.exit(4)
+        print("Nada a fazer: nem leads novos nem codigo diferente do repositorio (saida 3).")
+        sys.exit(3)
+
     arr = json.dumps(lista, ensure_ascii=False, separators=(",", ":"))
-    html_novo = html[:l_ini] + arr + html[l_fim:]
-    b = html_novo.find("<body>")
-    e = html_novo.rfind("</body>")
-    artifact = html_novo[b + len("<body>"):e]
+    html_novo = aplica_codigo(html[:l_ini] + arr + html[l_fim:])
+    artifact = sem_involucro(html_novo)
 
     resumo = []
     resumo.append("data=%s filas=%d por_fila=%d" % (hoje, len(filas), a.por_fila))
@@ -314,11 +373,8 @@ def main():
     resumo.append("por nicho: " + " | ".join("%s=%d" % kv for kv in sorted(por_nicho.items(), key=lambda x: -x[1])))
     resumo.append("lotes mantidos=%s descartados=%s" % (manter_datas, [d for d in datas if d not in manter_datas]))
     resumo.append("total embutido=%d" % len(lista))
+    resumo.append("codigo do radar: " + codigo_usado[0])
     print("\n".join(resumo))
-
-    if ja_tem_hoje:
-        print("JA EXISTE remessa com loteData=%s no HTML: nada foi gravado (saida 3)." % hoje)
-        sys.exit(3)
 
     os.makedirs(a.saida, exist_ok=True)
     with open(os.path.join(a.saida, "radar.html"), "w", encoding="utf-8", newline="\n") as f:
