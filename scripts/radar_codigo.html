@@ -540,6 +540,25 @@ function anuncioDe(nicho){
 function semAnuncio(l){ return !!(l&&(l.fonte==="cnpj"||!l.pageId)); }
 /* "Sou a Viviane" / "Sou o Herculano": as vendedoras da equipe. Se entrar outra, acrescente aqui. */
 function souNome(eu){ return (/^(viviane|isabel|malu)$/i.test(String(eu||""))?"Sou a ":"Sou o ")+eu; }
+
+/* ---------- 25/09: abertura que nao derruba o numero (aprovada pelo Danilo) ----------
+   A primeira mensagem nao leva link e nao apresenta o Danilo: so quem manda,
+   a cidade e uma pergunta que se responde com uma palavra. Numero novo que
+   manda link pra desconhecido e nao recebe resposta e o que o WhatsApp
+   derruba. O Danilo entra na segunda mensagem, depois da resposta.
+   Sem o nome da empresa (pedido do Danilo): nome so entra se for o nome de
+   uma pessoa que aparece no perfil do WhatsApp do contato, e quem poe e o
+   vendedor, na hora de enviar ("Oi, Marcelo, tudo bem?"). */
+function aquiE(eu){ return (/^(viviane|isabel|malu)$/i.test(String(eu||""))?"Aqui é a ":"Aqui é o ")+eu; }
+function cidadeDe(l){ return String((l&&l.cidade)||"").split(",")[0].replace(/^\s+|\s+$/g,""); }
+function deCidade(c){ return (/^rio de janeiro$/i.test(c)?"do ":"de ")+c; }
+function aberturaCnpj(l,eu){
+  var c=cidadeDe(l);
+  return "Oi, tudo bem? "+aquiE(eu)+". Cheguei até vocês pesquisando empresas "+(c?deCidade(c):"da região")+
+         " e fiquei com uma dúvida rápida: hoje o cliente novo de vocês chega mais por indicação, ou vocês já anunciam?";
+}
+var DICA_NOME_BIO="Antes de enviar, olhe o perfil do contato no WhatsApp. Se aparecer o nome de uma pessoa (ex.: Marcelo), acrescente depois do “Oi”: “Oi, Marcelo, tudo bem?”. Se aparecer nome de empresa ou nada, mande como está. Nunca escreva o nome da empresa na mensagem.";
+/* fim abertura 25/09 */
 /* 23/09 (pedido do Danilo): a pergunta vem primeiro, sem citar a empresa, e a
    apresentacao fica no fim - mais humano, menos vendedor. */
 var PERGUNTA_ANUNCIA="Oi, tudo bem?\nHoje você ainda depende de indicação, ou já investe em anúncio mas chega só lead desqualificado?";
@@ -654,7 +673,7 @@ function obsOu(l){ return observacaoDe(l)||PLACEHOLDER_OBS; }
    - Sem "sem compromisso": o convite mostra experiencia (funil, remarketing,
      lead barato nem sempre e lead bom) e diz que a agenda do Danilo e apertada.
    - Reuniao = 20 minutos pra apresentar estrategias novas e ver se faz
-     sentido investir e contratar um gestor de trafego. Sempre mandar o site.
+     sentido investir e contratar um gestor de trafego. Site so quando a pessoa pede, ou no fechamento da reuniao (25/09).
    - Nao insistir com "a gente faz por dentro", "nao e prioridade" e
      "ta vindo bem". */
 var SITE_DANILO="https://danilobarrocass.netlify.app/";
@@ -664,39 +683,26 @@ var SITE_DANILO="https://danilobarrocass.netlify.app/";
    primeira pessoa: nao existe "trabalho junto com o Danilo". */
 function msgWhats(l,vendNome,souDanilo){
   var an=anuncioDe(l.nicho), eu=nomeReal(vendNome);
-  if(semAnuncio(l)){
-    if(souDanilo) return PERGUNTA_ANUNCIA+"\n\n"+
-         "Sou o Danilo! Estrategista digital e especialista em tráfego pago, ajudo empresas a faturarem mais usando anúncio online.\n\n"+
-         "Esse é o meu site, caso você queira aumentar seu faturamento:\n"+SITE_DANILO;
-    return PERGUNTA_ANUNCIA+"\n\n"+
-         souNome(eu)+", do time do Danilo!\n"+
-         "Ele é estrategista digital e especialista em tráfego pago, ajuda empresas a faturarem mais usando anúncio online.\n\n"+
-         "Esse é o nosso site, caso você queira aumentar seu faturamento:\n"+SITE_DANILO;
-  }
+  /* 25/09: sem link e sem apresentar o Danilo na primeira mensagem. */
+  if(semAnuncio(l)) return aberturaCnpj(l,souDanilo?"Danilo":eu);
   if(souDanilo) return "Oi, tudo bem? Aqui é o Danilo.\n\n"+
          "Vi "+an+" aqui no Instagram, parei pra olhar com calma e achei que o perfil tem bastante potencial.\n\n"+
          "Sou especialista em tráfego pago e estrategista digital — ajudo empresas a venderem mais usando anúncio online.\n\n"+
          "Deixa eu te perguntar: hoje, quem chega pelo anúncio, o que mais acontece — pergunta o preço e some, ou nem é o cliente que vocês querem?";
-  return "Oi, tudo bem? Aqui é o "+eu+".\n\n"+
+  return "Oi, tudo bem? "+aquiE(eu)+".\n\n"+
          "Vi "+an+" aqui no Instagram, parei pra olhar com calma e achei que o perfil tem bastante potencial.\n\n"+
          "Trabalho junto com o Danilo — "+QUEM_E_DANILO+".\n\n"+
          "Deixa eu te perguntar: hoje, quem chega pelo anúncio, o que mais acontece — pergunta o preço e some, ou nem é o cliente que vocês querem?";
 }
-/* Direct: mais curta, no Instagram mensagem longa nao e lida. */
+/* Direct: sem uso no cartao desde 25/09 (mensagem so pelo WhatsApp).
+   Fica aqui porque a rotina da madrugada pode chamar nas planilhas. */
 function msgDirect(l,vendNome,souDanilo){
   var an=anuncioDe(l.nicho), eu=nomeReal(vendNome);
-  if(semAnuncio(l)){
-    if(souDanilo) return PERGUNTA_ANUNCIA_CURTA+"\n\n"+
-         "Sou o Danilo! Estrategista digital e especialista em tráfego pago, ajudo empresas a faturarem mais usando anúncio online.\n\n"+
-         "Esse é o meu site, caso você queira aumentar seu faturamento:\n"+SITE_DANILO;
-    return PERGUNTA_ANUNCIA_CURTA+"\n\n"+
-         souNome(eu)+", do time do Danilo!\n"+
-         "Ele é estrategista digital e especialista em tráfego pago, ajuda empresas a faturarem mais usando anúncio online.\n\n"+
-         "Esse é o nosso site, caso você queira aumentar seu faturamento:\n"+SITE_DANILO;
-  }
+  /* 25/09: a mesma abertura curta do WhatsApp; ja cabe no Direct. */
+  if(semAnuncio(l)) return aberturaCnpj(l,souDanilo?"Danilo":eu);
   if(souDanilo) return "Oi, tudo bem? Aqui é o Danilo, especialista em tráfego pago — ajudo empresas a venderem mais com anúncio online. Vi "+an+" aqui e achei que o perfil tem bastante potencial.\n\n"+
          "Deixa eu te perguntar: quem chega pelo anúncio, pergunta o preço e some, ou nem é o cliente que vocês querem?";
-  return "Oi, tudo bem? Aqui é o "+eu+", trabalho com o Danilo — especialista em tráfego pago, ajuda empresas a venderem mais com anúncio online. Vi "+an+" aqui e achei que o perfil tem bastante potencial.\n\n"+
+  return "Oi, tudo bem? "+aquiE(eu)+", trabalho com o Danilo — especialista em tráfego pago, ajuda empresas a venderem mais com anúncio online. Vi "+an+" aqui e achei que o perfil tem bastante potencial.\n\n"+
          "Deixa eu te perguntar: quem chega pelo anúncio, pergunta o preço e some, ou nem é o cliente que vocês querem?";
 }
 
@@ -710,15 +716,30 @@ var TXT_CLIENTE_ERRADO="Entendi — então o anúncio tá chegando na pessoa err
 /* ---------- leads do cadastro CNPJ: ele respondeu "e indicacao" ou "ja anuncio um pouco" ----------
    Sem campanha pra abrir na tela, o convite muda: "por onde ele comecaria". */
 var CONVITE_COMECAR="O Danilo te mostra isso na prática: te fala por onde ele começaria pra vocês e mostra exemplos de clientes que ele atende e que aumentaram o faturamento. São 20 minutos, direto ao ponto. A agenda dele é apertada, por isso eu já deixo reservado — fica melhor pra você amanhã de manhã ou de tarde?";
-var TXT_SO_INDICACAO="Entendi — então hoje é tudo no boca a boca. Isso é bom sinal: quem cresce por indicação tem produto que as pessoas recomendam.\n\n"+
-  "O que o Danilo faz é colocar isso na frente de quem ainda não conhece vocês, sem depender de sorte. Tráfego não é turbinar post: é funil, é remarketing, é levar a pessoa certa até o WhatsApp de vocês.\n\n"+CONVITE_COMECAR;
-var TXT_JA_ANUNCIA_POUCO="Legal, então vocês já têm uma base. Deixa eu te perguntar mais uma coisa: quem chega por esses anúncios, pergunta o preço e some, ou nem é o cliente que vocês querem?";
+/* 25/09 (Passo 2 aprovado pelo Danilo): a abertura nao apresenta ninguem,
+   entao a segunda mensagem e onde o Danilo aparece pela primeira vez. */
+var APRESENTA_TIME="sou do time do Danilo, ele é especialista em tráfego pago e ajuda empresas a venderem mais com anúncio online";
+var TXT_SO_INDICACAO="Entendi, então hoje é tudo no boca a boca. Isso é bom sinal: quem cresce por indicação tem produto que as pessoas recomendam.\n\n"+
+  "Te explico por que perguntei: "+APRESENTA_TIME+". O que ele faz é colocar isso na frente de quem ainda não conhece vocês, sem depender de sorte.\n\n"+CONVITE_COMECAR;
+/* "Ja anunciamos" ou "os dois": apresenta e faz a segunda pergunta. Depois
+   seguem TXT_PRECO_SOME / TXT_CLIENTE_ERRADO, como nos outros leads. */
+var TXT_JA_ANUNCIA_POUCO="Legal, então vocês já têm uma base. Te explico por que perguntei: "+APRESENTA_TIME+".\n\n"+
+  "Deixa eu te perguntar mais uma coisa: quem chega por esses anúncios, pergunta o preço e some, ou nem é o cliente que vocês querem?";
+/* "Quem é?" / "por quê?" / "sobre o quê?": apresenta e repete a pergunta. */
+function txtQuemE(l){
+  var c=cidadeDe(l);
+  return "Claro, me apresento direito: "+APRESENTA_TIME+". Estou conversando com empresas "+(c?deCidade(c):"da região")+
+         " pra entender como o cliente novo chega hoje. No caso de vocês, é mais por indicação ou vocês já anunciam?";
+}
 /* "Ta vindo bem": termina na primeira frase, sem convite. Se ele engatar, o vendedor convida. */
 var TXT_VINDO_BEM="Que bom — então vocês estão na frente da maioria que anuncia. Aí o que o Danilo faz é uma segunda leitura de fora pra escalar o que já tá funcionando, sem mexer no que dá certo.";
 
 /* ---------- marcando a reuniao: duas opcoes, nunca pergunta aberta ---------- */
 var TXT_PROPOS_DIA="Fechado, [segunda] então. De manhã ou de tarde? Me fala um horário que eu já reservo com o Danilo.";
+/* 25/09 (Passo 4 aprovado): o site so vai quando a pessoa pede, ou aqui,
+   na mensagem que fecha a reuniao. */
 var TXT_FECHAR_AGENDA="Reservado: [segunda], [21/09], às [14h]. O Danilo te chama nesse número, por chamada de vídeo. Em 20 minutos ele abre a campanha de vocês na tela e te mostra o que ajustaria.\n\n"+
+  "Se quiser conhecer o trabalho dele antes: "+SITE_DANILO+"\n\n"+
   "Vale separar esse horário mesmo, porque a agenda dele é apertada e eu já tirei esse espaço pra você. Se precisar mudar, me avisa por aqui antes que eu remanejo. Combinado?";
 var TXT_VAGO="Fechado! Pra eu já garantir o espaço com o Danilo: [segunda] ou [terça]? De manhã ou de tarde?";
 var TXT_VAGO_FUP="Oi, [Nome]! Só pra deixar reservado com o Danilo — o horário de [terça] ainda tá em aberto, mas não por muito tempo. De manhã ou de tarde?";
@@ -734,9 +755,10 @@ var TXT_DEPOIS_MARCOU="1. Clique em REUNIÃO MARCADA.\n2. Escreva na anotação:
 /* ---------- caiu na recepcao: apresenta tudo, e o contato so no fim ---------- */
 function txtRecepcaoQuem(l,vendNome){
   var eu=nomeReal(vendNome);
-  return "Sou o "+eu+", trabalho junto com o Danilo — "+QUEM_E_DANILO+". O site dele, pra vocês conhecerem o trabalho: "+SITE_DANILO+"\n\n"+
+  /* 25/09: sem o site (Passo 4) e com a pergunta da abertura nova. */
+  return souNome(eu)+", trabalho junto com o Danilo — "+QUEM_E_DANILO+".\n\n"+
          (semAnuncio(l)
-           ? "Tô entrando em contato porque o Danilo trabalha com empresas como a de vocês. Hoje vocês ainda dependem de indicação, ou já investem em anúncio mas chega só lead desqualificado?\n\n"
+           ? "Tô entrando em contato porque o Danilo trabalha com empresas como a de vocês. Hoje o cliente novo de vocês chega mais por indicação, ou vocês já anunciam?\n\n"
            : "Vi o anúncio de vocês no Instagram. Hoje, quem chega por ele, o que mais acontece — pergunta o preço e some, ou nem é o cliente que vocês querem?\n\n")+
          "O Danilo apresenta estratégias novas pra isso numa reunião de 20 minutos — mas precisa ser com quem investe no tráfego, quem paga a campanha, porque é essa pessoa que vai decidir se faz sentido. Consegue me passar o contato dela, ou encaminhar pra ela?";
 }
@@ -765,8 +787,7 @@ var TXT_JA_TEM="Que bom, então tem quem cuide. Não vim tomar o lugar de ningu�
   "O site dele, pra conhecer o trabalho: "+SITE_DANILO;
 /* Quem fala "a gente faz por dentro" e alguem da equipe: insistir soa como tirar o lugar dele. */
 var TXT_FAZ_INTERNO="Entendi, faz sentido. Obrigado pela resposta! 🙂";
-var TXT_SEM_INTERESSE="Tranquilo, não vou insistir. Obrigado pela resposta! 🙂\n\n"+
-  "Se um dia quiser que o Danilo olhe a campanha de vocês, é só me chamar aqui. O site dele, pra conhecer o trabalho: "+SITE_DANILO;
+var TXT_SEM_INTERESSE="Tranquilo, não vou insistir. Obrigado pela resposta! 🙂 Se um dia quiser que o Danilo olhe a campanha de vocês, é só me chamar aqui.";
 var TXT_AGRADECEU="De nada! Posso te perguntar uma coisa só, pra eu não te incomodar à toa depois? O “não é o momento” é porque o anúncio tá dando retorno bom, ou porque não é prioridade agora?";
 var TXT_NAO_PRIORIDADE="Entendi, obrigado! Quando virar prioridade, me chama aqui que eu reservo com o Danilo. 🙂";
 var TXT_PROPOSTA="Mando sim — mas te falo na real: proposta com valor quem monta é o Danilo, depois de entender a campanha de vocês, senão vai número errado e vocês decidem em cima de chute.\n\n"+
@@ -785,21 +806,18 @@ var TXT_PARAR="Tranquilo, desculpa incomodar. Boa semana!";
 
 /* ---------- silencio: dois toques depois da abertura, e um pra quem sumiu ---------- */
 function txtFup1(vendNome,l){
-  if(l&&semAnuncio(l)) return "Oi, tudo bem? Sou o "+nomeReal(vendNome)+" de novo, do time do Danilo. Passando pra retomar a pergunta: hoje você ainda depende de indicação, ou já investe em anúncio mas chega só lead desqualificado?\n\n"+
-         "Pergunto porque é justamente nisso que o Danilo trabalha: fazer cliente novo chegar sem depender só de indicação. Se fizer sentido, ele te mostra por onde começaria numa reunião de 20 minutos. Amanhã de manhã ou de tarde?\n\n"+
-         "Pra conhecer o trabalho dele: "+SITE_DANILO;
-  return "Oi, tudo bem? Sou o "+nomeReal(vendNome)+" de novo, do time do Danilo. Passando pra retomar a pergunta: hoje, quem chega pelo anúncio de vocês, pergunta o preço e some, ou nem é o cliente que vocês querem?\n\n"+
-         "É a queixa mais comum de quem investe em tráfego, e é justamente nisso que o Danilo trabalha. Se fizer sentido, ele apresenta estratégias novas pra campanha de vocês numa reunião de 20 minutos. Amanhã de manhã ou de tarde?\n\n"+
-         "Pra conhecer o trabalho dele: "+SITE_DANILO;
+  /* 25/09 (Passo 5 aprovado): curto, sem link, sem o nome da empresa;
+     repete a pergunta da abertura e a conversa segue pelo Passo 2. */
+  if(l&&semAnuncio(l)) return "Oi, tudo bem? "+aquiE(nomeReal(vendNome))+" de novo. Acho que minha pergunta se perdeu aqui: o cliente novo de vocês chega mais por indicação, ou vocês já anunciam?";
+  return "Oi, tudo bem? "+souNome(nomeReal(vendNome))+" de novo, do time do Danilo. Passando pra retomar a pergunta: hoje, quem chega pelo anúncio de vocês, pergunta o preço e some, ou nem é o cliente que vocês querem?\n\n"+
+         "É a queixa mais comum de quem investe em tráfego, e é justamente nisso que o Danilo trabalha. Se fizer sentido, ele apresenta estratégias novas pra campanha de vocês numa reunião de 20 minutos. Amanhã de manhã ou de tarde?";
 }
 var TXT_FUP2="Oi! Última vez que te chamo, prometo.\n\n"+
   "Se o anúncio de vocês tá trazendo o cliente certo e fechando, ignora essa mensagem de boa — sério.\n\n"+
   "Se tá vindo contato que pergunta preço e some, 20 minutos com o Danilo valem a pena: ele apresenta estratégias novas e você vê se faz sentido investir num gestor de tráfego. Me fala um dia e se prefere manhã ou tarde que eu reservo.";
-var TXT_FUP2_CNPJ="Oi! Última vez que te chamo, prometo.\n\n"+
-  "Se vocês já estão vendendo bem do jeito que tá, ignora essa mensagem de boa — sério.\n\n"+
-  "Se quiser ver como o anúncio pode trazer cliente novo sem depender só de indicação, 20 minutos com o Danilo valem a pena: ele apresenta estratégias novas e você vê se faz sentido investir num gestor de tráfego. Me fala um dia e se prefere manhã ou tarde que eu reservo.";
+var TXT_FUP2_CNPJ="Oi! Última vez que te chamo, prometo. Se vocês já estão vendendo bem do jeito que tá, ignora essa mensagem de boa. Se quiser ver como trazer cliente novo sem depender só de indicação, me responde aqui que eu te explico em duas linhas.";
 var TXT_SUMIU="Oi, [Nome]! Ficou alguma dúvida do que te falei?\n\n"+
-  "Se for questão de momento, me fala que eu te procuro mais pra frente. Se for dúvida do que o Danilo faz, dá uma olhada no site dele — e os 20 minutos são exatamente pra ele te mostrar as estratégias na prática. Amanhã de manhã ou de tarde?\n\n"+SITE_DANILO;
+  "Se for questão de momento, me fala que eu te procuro mais pra frente. Se for dúvida do que o Danilo faz, os 20 minutos são exatamente pra ele te mostrar as estratégias na prática. Amanhã de manhã ou de tarde?";
 
 /* ---------- os mesmos textos na voz do Danilo ----------
    Os scripts falam do Danilo em terceira pessoa ("o Danilo te mostra").
@@ -822,7 +840,8 @@ var VOZ_DANILO=[
  ["O Danilo te chamou às [hora] e não conseguiu falar com você","Te chamei às [hora] e não consegui falar com você"],
  ["o Danilo abre a campanha de vocês na tela e apresenta estratégias novas, com exemplos de clientes que ele atende. Você sai sabendo o que ele faria diferente","eu abro a campanha de vocês na tela e apresento estratégias novas, com exemplos de clientes que eu atendo. Você sai sabendo o que eu faria diferente"],
  ["3. Mande o resumo pro Danilo hoje: Resumo do dia → Mandar direto pro Danilo.","3. Reunião sua: não precisa mandar resumo pra ninguém."],
- ["Sou o Danilo, trabalho junto com o Danilo — ele é especialista em tráfego pago e estrategista digital, ajuda empresas a venderem mais usando anúncio online. O site dele, pra vocês conhecerem o trabalho: ","Sou o Danilo, especialista em tráfego pago e estrategista digital — ajudo empresas a venderem mais usando anúncio online. Meu site, pra vocês conhecerem o trabalho: "],
+ ["Sou o Danilo, trabalho junto com o Danilo — ele é especialista em tráfego pago e estrategista digital, ajuda empresas a venderem mais usando anúncio online.","Sou o Danilo, especialista em tráfego pago e estrategista digital — ajudo empresas a venderem mais usando anúncio online."],
+ ["Se quiser conhecer o trabalho dele antes: ","Se quiser conhecer o meu trabalho antes: "],
  ["O Danilo apresenta estratégias novas pra isso numa reunião de 20 minutos","Eu apresento estratégias novas pra isso numa reunião de 20 minutos"],
  ["É pra marcar os 20 minutos com o Danilo e ver se faz sentido","É pra marcar os 20 minutos comigo e ver se faz sentido"],
  ["são três linhas e o site do Danilo.","são três linhas e o meu site."],
@@ -847,10 +866,13 @@ var VOZ_DANILO=[
  ["é justamente nisso que o Danilo trabalha. Se fizer sentido, ele apresenta estratégias novas","é justamente nisso que eu trabalho. Se fizer sentido, eu apresento estratégias novas"],
  ["Pra conhecer o trabalho dele: ","Pra conhecer o meu trabalho: "],
  ["20 minutos com o Danilo valem a pena: ele apresenta estratégias novas","20 minutos comigo valem a pena: eu apresento estratégias novas"],
- ["Se for dúvida do que o Danilo faz, dá uma olhada no site dele — e os 20 minutos são exatamente pra ele te mostrar as estratégias na prática.","Se for dúvida do que eu faço, dá uma olhada no meu site — e os 20 minutos são exatamente pra eu te mostrar as estratégias na prática."],
+ ["Se for dúvida do que o Danilo faz, os 20 minutos são exatamente pra ele te mostrar as estratégias na prática.","Se for dúvida do que eu faço, os 20 minutos são exatamente pra eu te mostrar as estratégias na prática."],
  /* leads do cadastro CNPJ (23/09) */
  ["O Danilo te mostra isso na prática: te fala por onde ele começaria pra vocês e mostra exemplos de clientes que ele atende e que aumentaram o faturamento. São 20 minutos, direto ao ponto. A agenda dele é apertada, por isso eu já deixo reservado","Eu te mostro isso na prática: te falo por onde eu começaria pra vocês e mostro exemplos de clientes que eu atendo e que aumentaram o faturamento. São 20 minutos, direto ao ponto. Minha agenda é apertada, por isso eu já deixo reservado"],
  ["O que o Danilo faz é colocar isso na frente de quem ainda não conhece vocês","O que eu faço é colocar isso na frente de quem ainda não conhece vocês"],
+ /* Passo 2 (25/09): a apresentacao da segunda mensagem */
+ ["sou do time do Danilo, ele é especialista em tráfego pago e ajuda empresas a venderem mais com anúncio online. O que ele faz é colocar isso na frente","sou especialista em tráfego pago e ajudo empresas a venderem mais com anúncio online. O que eu faço é colocar isso na frente"],
+ ["sou do time do Danilo, ele é especialista em tráfego pago e ajuda empresas a venderem mais com anúncio online","sou especialista em tráfego pago e ajudo empresas a venderem mais com anúncio online"],
  ["é justamente nisso que o Danilo trabalha: fazer cliente novo chegar sem depender só de indicação. Se fizer sentido, ele te mostra por onde começaria","é justamente nisso que eu trabalho: fazer cliente novo chegar sem depender só de indicação. Se fizer sentido, eu te mostro por onde começaria"],
  ["Tô entrando em contato porque o Danilo trabalha com empresas como a de vocês.","Tô entrando em contato porque eu trabalho com empresas como a de vocês."],
  [" — 20 minutos com o Danilo\n\n"," — 20 minutos de conversa\n\n"]
@@ -889,7 +911,7 @@ var BIBLIOTECA=[
   "A reunião precisa ser com quem investe no tráfego: é essa pessoa que decide se faz sentido investir e trazer um gestor de tráfego novo. Marcar com quem não decide é reunião perdida."],
 
  ["A sequência, passo a passo (fluxo de 14/09)",
-  "1. Abertura: quem você é, o anúncio, o Danilo, e a pergunta — “pergunta o preço e some, ou nem é o cliente que vocês querem?”. Tudo numa mensagem.\n2. Ele responde. Você valida em uma linha, explica em duas que tráfego não é turbinar post, e convida: 20 minutos, agenda apertada, “amanhã de manhã ou de tarde?”.\n3. Ele propõe dia → você pede manhã ou tarde → ele dá a hora → você fecha com dia, data, hora e canal, numa mensagem que fica salva na conversa dele.\n4. Véspera (peça o “ok”) e uma hora antes.\n\nTrês regras que valem em todas as etapas: nunca diga que o anúncio tem erro ou defeito (nada de print); nunca diga “sem compromisso”; e sempre deixe o site do Danilo quando a conversa desviar — "+SITE_DANILO,
+  "1. Abertura: quem você é, o anúncio, o Danilo, e a pergunta — “pergunta o preço e some, ou nem é o cliente que vocês querem?”. Tudo numa mensagem.\n2. Ele responde. Você valida em uma linha, explica em duas que tráfego não é turbinar post, e convida: 20 minutos, agenda apertada, “amanhã de manhã ou de tarde?”.\n3. Ele propõe dia → você pede manhã ou tarde → ele dá a hora → você fecha com dia, data, hora e canal, numa mensagem que fica salva na conversa dele.\n4. Véspera (peça o “ok”) e uma hora antes.\n\nTrês regras que valem em todas as etapas: nunca diga que o anúncio tem erro ou defeito (nada de print); nunca diga “sem compromisso”; e o site do Danilo só vai quando a pessoa pede pra conhecer o trabalho, ou na mensagem que fecha a reunião — "+SITE_DANILO,
   "A pergunta descreve o que todo mundo que faz tráfego vive, então o dono reconhece na hora. E o convite mostra que o Danilo entende de funil, remarketing e de lead barato que não é lead bom — é isso que separa ele de quem “impulsiona post”."],
 
  ["Como falar — o tom certo",
@@ -904,13 +926,17 @@ var BIBLIOTECA=[
   msgWhats(LEAD_EXEMPLO,"Markus"),
   "Apresentação, o anúncio que você viu, o elogio, o Danilo em uma frase e a pergunta com duas opções — tudo numa mensagem. O Radar troca “o anúncio dos veículos / do empreendimento / de vocês” pelo nicho. Não acrescente frase, não mande áudio, não mande foto."],
 
- ["Abertura — Direct do Instagram (mais curta)",
-  msgDirect(LEAD_EXEMPLO,"Markus"),
-  "No Direct mensagem longa não é lida. Mesma estrutura, metade do tamanho. Depois da resposta, o fluxo é o mesmo do WhatsApp."],
+ ["Onde mandar: só WhatsApp (desde 25/09)",
+  "A mensagem sai só pelo WhatsApp, pelo botão verde do cartão.\n\nGoogle e Instagram servem só pra conferir: se a empresa existe, se está ativa, qual é o ramo. Não mande Direct nem mensagem pelo Facebook.\n\nSe o lead veio sem WhatsApp, procure no Google ou no Instagram se ele tem um. Achou? Copie o texto de Abertura e mande pelo WhatsApp. Não achou? Marque “Sem contato encontrado” e siga.",
+  "Um canal só deixa a conversa num lugar, com o histórico que o Radar acompanha. E evita que a mesma empresa receba a mesma abordagem por dois caminhos, que é o que faz a pessoa denunciar."],
 
- ["Abertura — empresa que talvez ainda não anuncie (leads do cadastro CNPJ, desde 23/09)",
-  msgWhats({empresa:"Loja Exemplo",nicho:"Varejo/Moda",fonte:"cnpj"},"Markus")+"\n\n— se ele responder que ainda depende de indicação: —\n\n"+TXT_SO_INDICACAO+"\n\n— se ele responder que já investe mas chega lead desqualificado: —\n\n"+TXT_CLIENTE_ERRADO,
-  "Esses leads vieram do cadastro de empresas, não da Biblioteca de Anúncios: a gente não sabe se anunciam. Por isso a abertura pergunta primeiro, sem citar a empresa, e só no fim diz quem é o Danilo, com o site (texto do Danilo, 23/09). Se ele já anuncia e vem lead ruim, a conversa segue igual à dos outros leads. Se é só indicação, o convite muda: o Danilo mostra por onde começaria."],
+ ["Abertura e segunda mensagem — leads do cadastro CNPJ (textos de 25/09)",
+  msgWhats({empresa:"Coutinho Veiculos",nicho:"Automotivo",cidade:"Fortaleza, CE",fonte:"cnpj"},"Markus")+
+  "\n\n— se ele responder que é por indicação: —\n\n"+TXT_SO_INDICACAO+
+  "\n\n— se ele responder que já anunciam, ou os dois: —\n\n"+TXT_JA_ANUNCIA_POUCO+
+  "\n\n— se ele perguntar “quem é?”, “por quê?” ou “sobre o quê?”: —\n\n"+txtQuemE({cidade:"Fortaleza, CE"})+
+  "\n\n— depois da segunda pergunta, se ele disser que pergunta o preço e some ou que nem é o cliente certo, use as respostas de sempre (logo abaixo). —",
+  "Esses leads vieram do cadastro de empresas, não da Biblioteca de Anúncios: a gente não sabe se anunciam. Desde 25/09 a primeira mensagem é só essa: seu nome, a cidade e uma pergunta que se responde com uma palavra. Sem link, sem falar do Danilo e sem o nome da empresa. "+DICA_NOME_BIO+" Número novo que manda link pra quem não conhece e não recebe resposta é o que o WhatsApp derruba. O Danilo entra na segunda mensagem, depois que ele respondeu: é aí que você se apresenta como do time dele. Mande exatamente o texto do Radar, sem frase a mais, sem áudio e sem foto, e espere a resposta antes de mandar qualquer outra coisa."],
 
  ["Ele respondeu: “pergunta o preço e some” — valide e convide",
   TXT_PRECO_SOME,
@@ -950,19 +976,19 @@ var BIBLIOTECA=[
 
  ["Caiu na recepção — “sobre o quê?”, “quem é?”, “vou ver com o responsável”",
   txtRecepcaoQuem(LEAD_EXEMPLO,"Markus"),
-  "Nove em cada dez leads chegam sem contato direto. Aqui você se apresenta inteiro — quem é, o Danilo, o site, a pergunta — e só no fim pede o contato, amarrado ao motivo: a reunião precisa ser com quem paga a campanha, porque é quem decide. Não diga “queria falar com quem cuida da campanha” logo de cara."],
+  "Nove em cada dez leads chegam sem contato direto. Aqui você se apresenta inteiro — quem é, o Danilo e a pergunta, sem link — e só no fim pede o contato, amarrado ao motivo: a reunião precisa ser com quem paga a campanha, porque é quem decide. Não diga “queria falar com quem cuida da campanha” logo de cara."],
 
  ["Recepção — ela vai encaminhar / pediu e-mail / disse que não tem interesse",
   txtRecepcaoEncaminha("Markus")+"\n\n— se ela pedir e-mail: —\n\n"+TXT_RECEPCAO_EMAIL+"\n\n— o e-mail que vai (só isto): —\n\n"+txtEmail(LEAD_EXEMPLO,"Markus")+"\n\n— se ela disser “não temos interesse”: —\n\n"+TXT_RECEPCAO_SEM_INTERESSE,
   "Se ela vai encaminhar, marque “Recepção vai encaminhar” e o Radar traz o lead de volta em dois dias; nesse dia, uma vez só: “"+TXT_RECEPCAO_FUP+"” Depois disso, “Não é o decisor” e siga. Se ela disse que não tem interesse, agradeça, marque “Não tem interesse” e siga — sem toque depois."],
 
  ["Follow-up 1 (2 dias depois, se não respondeu)",
-  txtFup1("Markus"),
-  "Quem não respondeu provavelmente nem leu — por isso o primeiro toque repete a pergunta da abertura, que é o que faz a mensagem funcionar. No dia que mandar, clique “Não respondeu”."],
+  txtFup1("Markus",{fonte:"cnpj"}),
+  "Quem não respondeu provavelmente nem leu — por isso o primeiro toque repete a pergunta da abertura, curto, sem link e sem o nome da empresa. Se ele responder, siga pela segunda mensagem (indicação, já anunciam, ou quem é). No dia que mandar, clique “Não respondeu”."],
 
  ["Follow-up 2 (3 dias depois, o último)",
-  TXT_FUP2,
-  "“Última vez” tira a ameaça de insistência; “se tá bom, ignora” devolve o controle e é o que faz quem não está bem responder. Depois disso, marque “Não respondeu” de novo e siga. Não existe follow-up 3."],
+  TXT_FUP2_CNPJ,
+  "“Última vez” tira a ameaça de insistência; “se tá bom, ignora” devolve o controle e é o que faz quem não está bem responder. Se ele responder, mande a segunda mensagem de “é por indicação”, que explica em poucas linhas o que o Danilo faz. Depois do follow-up 2 sem resposta, marque “Não respondeu” de novo e siga. Não existe follow-up 3."],
 
  ["Respondeu e sumiu — depois da resposta ou do convite",
   TXT_SUMIU,
@@ -1005,7 +1031,7 @@ var BIBLIOTECA=[
   "Pare na hora e marque “Pediu pra não contatar”. É LGPD, não gentileza."],
 
  ["O que nunca fazer",
-  "• NUNCA diga que o anúncio tem erro, defeito ou problema. Não mande print. O sinal que o Radar mostra no cartão é só pra você.\n• NUNCA passe valor. Nem \"a partir de\", nem \"gira em torno de X reais\". Quem apresenta preço é o Danilo, na reunião. Você só dá a régua do CLT.\n• Não diga “sem compromisso”. A reunião tem valor e a agenda do Danilo é apertada.\n• Não termine o convite sem duas opções de horário. “Pode ser essa semana?” recebe “semana que vem”.\n• Não escreva “vou encaminhar seu contato pro Danilo” sem antes fixar dia, data, hora e que ele chama nesse número.\n• Não pule a confirmação da véspera. Reunião sem “ok” é no-show.\n• Não insista com quem disse “a gente faz por dentro”, “não é prioridade” ou “tá vindo bem”. Agradeça e siga.\n• Não prometa proposta, resultado, prazo ou número de clientes.\n• Não mande áudio no primeiro contato. Não mande portfólio nem apresentação — o site do Danilo é o que vai.\n• Não insista depois do follow-up 2. Marque “Não respondeu” e siga.\n• Se pedirem pra parar, pare na hora. Isso é LGPD, não gentileza.",
+  "• NUNCA diga que o anúncio tem erro, defeito ou problema. Não mande print. O sinal que o Radar mostra no cartão é só pra você.\n• NUNCA passe valor. Nem \"a partir de\", nem \"gira em torno de X reais\". Quem apresenta preço é o Danilo, na reunião. Você só dá a régua do CLT.\n• Não diga “sem compromisso”. A reunião tem valor e a agenda do Danilo é apertada.\n• Não termine o convite sem duas opções de horário. “Pode ser essa semana?” recebe “semana que vem”.\n• Não escreva “vou encaminhar seu contato pro Danilo” sem antes fixar dia, data, hora e que ele chama nesse número.\n• Não pule a confirmação da véspera. Reunião sem “ok” é no-show.\n• Não insista com quem disse “a gente faz por dentro”, “não é prioridade” ou “tá vindo bem”. Agradeça e siga.\n• Não prometa proposta, resultado, prazo ou número de clientes.\n• Não mande áudio no primeiro contato. Não mande portfólio nem apresentação. O site do Danilo só vai quando a pessoa pede pra conhecer o trabalho, ou quando a reunião fecha.\n• Não insista depois do follow-up 2. Marque “Não respondeu” e siga.\n• Se pedirem pra parar, pare na hora. Isso é LGPD, não gentileza.",
   "Os três primeiros da agenda são os que mais custaram nos prints: uma reunião ficou em “semana que vem” e a outra saiu sem dia, hora e canal escritos. Valor solto por WhatsApp vira âncora e mata a reunião antes de nascer."]
 ];
 
@@ -1150,6 +1176,7 @@ function seqPainel(proprio){
     el("div",{},[el("b",{text:l.empresa}),el("span",{class:"meta",text:"  "+(l.nicho||"")+" · "+(l.cidade||"")+" · "+l.wa})]),
     el("div",{class:"eyebrow",style:"margin-top:8px",text:"A mensagem que vai (já em "+(souD?"primeira pessoa":"seu nome")+")"}),
     el("div",{class:"scriptbox",text:msg}),
+    el("p",{class:"hint",style:"margin:6px 0 0",text:DICA_NOME_BIO}),
     el("div",{class:"acts",style:"margin-top:8px"},[
       botao,
       el("button",{class:"btn",onclick:function(){copiar(msg)}},[document.createTextNode("copiar texto")]),
@@ -1933,13 +1960,17 @@ function linhaSite(meu){
 }
 function corpo(l,dono,st){
   var vn=nomeVend(dono), souDanilo=ehGestor(dono);
-  var mA=msgWhats(l,vn,souDanilo), mC=msgDirect(l,vn,souDanilo);
+  var mA=msgWhats(l,vn,souDanilo);
   var obs=observacaoDe(l), setupPro=!obs;
   var wa=waLink(l.wa,mA), ig=igLink(l.ig);
   var cnpjLead=semAnuncio(l);
   var fb=cnpjLead?null:"https://www.facebook.com/"+l.pageId;
   var ads=cnpjLead?null:"https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&view_all_page_id="+l.pageId;
-  var busca="https://www.google.com/search?q="+encodeURIComponent(l.empresa+" "+String(l.cidade||"").split(",")[0]+" instagram whatsapp");
+  /* 25/09 (pedido do Danilo): mensagem so pelo WhatsApp. Instagram e Google
+     ficam so pra conferir a empresa antes de mandar. */
+  var ondeEmp=l.empresa+" "+cidadeDe(l);
+  var busca="https://www.google.com/search?q="+encodeURIComponent(ondeEmp+(l.wa?"":" whatsapp"));
+  var igConf=ig||("https://www.google.com/search?q="+encodeURIComponent(ondeEmp+" instagram"));
   var telFixo=(l.tel&&String(l.tel).replace(/\D/g,"").length>=10)?String(l.tel):"";
   var reg=regDe(dono,l.id)||{};
   var pk=perguntaChave(l.nicho);
@@ -1987,29 +2018,21 @@ function corpo(l,dono,st){
   /* ---- contato: os botoes de abrir a conversa e o site, logo abaixo da classificacao ---- */
   var contato=el("div",{class:"cardbox full"},[
     el("div",{class:"cb-head"},[
-      el("b",{text:wa?"Abra a conversa no WhatsApp":(telFixo?"Ligue, ou ache o WhatsApp desta empresa":"Pegue o contato desta empresa")}),
+      el("b",{text:wa?"Mande a mensagem pelo WhatsApp":"Esta empresa veio sem WhatsApp"}),
       el("span",{text:wa
-        ? "O botão verde abre o WhatsApp já com a mensagem escrita. Você só confere e aperta enviar."
-        : (cnpjLead
-          ? (telFixo
-            ? "Esta empresa veio só com telefone fixo ("+telFixo+"). Ligue e peça o WhatsApp de quem decide, ou procure o Instagram e o WhatsApp dela no Google (botão abaixo)."
-            : "Esta empresa veio sem telefone. Procure o Instagram ou o WhatsApp dela no Google (botão abaixo) e chame por lá.")
-          : "Esta empresa veio sem telefone. Abra a página no Facebook, ache o WhatsApp ou o Instagram dela e chame por lá. Leva uns 10 segundos.")})
+        ? "A mensagem sai só pelo WhatsApp. Se quiser, confira antes no Google ou no Instagram se a empresa existe e está ativa. Depois, o botão verde abre o WhatsApp com o texto escrito. "+DICA_NOME_BIO
+        : "A mensagem sai só pelo WhatsApp. Confira no Google ou no Instagram se ela tem um WhatsApp"+(telFixo?" (o telefone que veio é fixo: "+telFixo+")":"")+". Achou? Copie o texto de “Abertura” aqui embaixo e mande pelo WhatsApp. Não achou? Marque “Sem contato encontrado” e siga."})
     ]),
     el("div",{class:"acts"},[
       wa?el("a",{class:"btn primary",href:wa,target:"_blank",rel:"noopener",
         onclick:function(){ if(st==="novo") salvarReg(l.id,{s:"contatado",m:"contatado",d:HOJE},dono); }},
-        [document.createTextNode("Chamar "+l.empresa+" no WhatsApp")]):null,
-      (!wa&&telFixo)?el("a",{class:"btn primary",href:"tel:+55"+telFixo.replace(/\D/g,"")},
-        [document.createTextNode("Ligar: "+telFixo)]):null,
-      fb?el("a",{class:wa?"btn":"btn primary",href:fb,target:"_blank",rel:"noopener"},
-        [document.createTextNode("Abrir a página no Facebook")]):null,
-      ig?el("a",{class:"btn",href:ig,target:"_blank",rel:"noopener"},
-        [document.createTextNode("Abrir o Direct")]):null,
-      cnpjLead?el("a",{class:(wa||telFixo)?"btn":"btn primary",href:busca,target:"_blank",rel:"noopener"},
-        [document.createTextNode("Procurar Instagram e WhatsApp no Google")]):null,
+        [document.createTextNode("Enviar mensagem no WhatsApp")]):null,
+      el("a",{class:"btn",href:busca,target:"_blank",rel:"noopener"},
+        [document.createTextNode("Conferir no Google")]),
+      el("a",{class:"btn",href:igConf,target:"_blank",rel:"noopener"},
+        [document.createTextNode("Conferir o Instagram")]),
       ads?el("a",{class:"btn",href:ads,target:"_blank",rel:"noopener"},
-        [document.createTextNode("Ver os anúncios dele")]):null
+        [document.createTextNode("Conferir os anúncios dele")]):null
     ]),
     linhaSite(souDanilo)
   ]);
@@ -2037,11 +2060,12 @@ function corpo(l,dono,st){
   var fup2Vez   = reg.s==="fup1";
   var sumiuVez  = !!(atrasado && (reg.s==="conversa"||reg.s==="fup2"));
   var respostas=el("div",{style:"margin-top:7px"},[
-    sub(cnpjLead?"Ele respondeu: indicação ou anúncio com lead desqualificado?":"Ele respondeu à pergunta da abertura"),
-    cnpjLead?seEle("Disse que ainda depende de indicação — valide e convide",TXT_SO_INDICACAO):null,
-    cnpjLead?seEle("Disse que já investe mas chega lead desqualificado — valide e convide",TXT_CLIENTE_ERRADO):null,
-    cnpjLead?seEle("Disse que anuncia só um pouco / impulsiona — faça a segunda pergunta; depois use as respostas abaixo",TXT_JA_ANUNCIA_POUCO):null,
+    sub(cnpjLead?"Ele respondeu à abertura: indicação ou já anunciam? (aqui você se apresenta)":"Ele respondeu à pergunta da abertura"),
+    cnpjLead?seEle("Disse que é por indicação / boca a boca — apresente-se e convide",TXT_SO_INDICACAO):null,
+    cnpjLead?seEle("Disse que já anunciam, ou os dois — apresente-se e faça a segunda pergunta",TXT_JA_ANUNCIA_POUCO):null,
+    cnpjLead?seEle("Perguntou “quem é?”, “por quê?” ou “sobre o quê?” — apresente-se e repita a pergunta",txtQuemE(l)):null,
     cnpjLead?seEle("Disse que já tem quem cuide dos anúncios — use a resposta de “já tem agência”",TXT_JA_TEM):null,
+    cnpjLead?sub("Ele respondeu à segunda pergunta: preço e some, ou cliente errado?"):null,
     seEle("Disse que pergunta o preço e some — valide e convide",TXT_PRECO_SOME),
     seEle("Disse que nem é o cliente que eles querem — valide e convide",TXT_CLIENTE_ERRADO),
     seEle("Disse “os dois” — use a primeira",TXT_PRECO_SOME),
@@ -2097,8 +2121,7 @@ function corpo(l,dono,st){
     ]),
     el("div",{class:"msgcols"},[
       el("div",{class:"eyebrow",text:"Abertura — a primeira mensagem"}),
-      seEle("Pelo WhatsApp",mA,false,ehNovo),
-      seEle("Pelo Direct do Instagram (mais curta)",mC,false,ehNovo),
+      seEle("Pelo WhatsApp (a mensagem sai só por lá)",mA,false,ehNovo),
       el("div",{class:"eyebrow",text:"Sem resposta — follow-ups"}),
       seEle((fupVenceu?"VENCEU — mande hoje o follow-up 1":"Se ele NÃO responder até "+dataBR(reg.d?venc:prevista)+" — follow-up 1"),txtFup1(vn,l),fupVenceu,st==="contatado"&&reg.m!=="recepcao"),
       seEle((fup2Vez?"Agora é a última — follow-up 2":"Se continuar sem resposta 3 dias depois — follow-up 2, a última"),cnpjLead?TXT_FUP2_CNPJ:TXT_FUP2,fup2Vez),
@@ -2308,7 +2331,7 @@ function viewScripts(main){
     el("b",{text:"As três regras que não se quebram"}),
     el("div",{html:"<b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>1.</b> Você não vende, você marca reunião. O Danilo apresenta valor, você não. "+
       "<br><b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>2.</b> Se perguntarem preço, dê só a régua: fica na faixa de contratar um CLT. Nunca um número."+
-      "<br><b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>3.</b> Nunca diga que o anúncio tem erro ou defeito. Nada de print — o que vai é o site do Danilo."})
+      "<br><b style='display:inline;font-size:13px;letter-spacing:0;text-transform:none'>3.</b> Nunca diga que o anúncio tem erro ou defeito. Nada de print. O site do Danilo só vai quando a pessoa pede, ou quando a reunião fecha."})
   ]));
 
   main.appendChild(el("div",{class:"panel"},[
