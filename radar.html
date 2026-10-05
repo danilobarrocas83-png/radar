@@ -1065,9 +1065,29 @@ function todosLeads(){
   });
   return out;
 }
+/* Follow-up repassado (05/10): em dia de follow-up a rotina passa follow-ups
+   vencidos para quem ficaria sem trabalho. O lead vem com o estado em que
+   estava (l.her = quem mandou a ultima mensagem, status e data). Enquanto o
+   novo dono nao marcar nada, e esse estado que vale para ele - senao o lead
+   apareceria como "nao contatado" e a empresa receberia a abertura de novo. */
+var HERDADO={};
+function montarHerdados(){
+  HERDADO={};
+  STATE.lotes.forEach(function(lo){ (lo.itens||[]).forEach(function(l){
+    if(l.her&&l.her.s) HERDADO[l.id]={vend:l.vend,de:l.her.v,
+      reg:{s:l.her.s,m:l.her.m||(l.her.s==="fup1"?"sem_resposta":"contatado"),d:l.her.d}};
+  }); });
+}
 function regDe(vid,leadId){
   var m=STATE.atividade[vid]||{};
-  return m[leadId]||null;
+  if(m[leadId]) return m[leadId];
+  var h=HERDADO[leadId];
+  return (h&&h.vend===vid)?h.reg:null;
+}
+/* o lead chegou repassado e quem cuida dele agora ainda nao marcou nada */
+function repassadoDe(vid,leadId){
+  var h=HERDADO[leadId];
+  return (h&&h.vend===vid&&!(STATE.atividade[vid]||{})[leadId])?h.de:null;
 }
 function statusDe(vid,leadId){var r=regDe(vid,leadId);return r&&r.s?r.s:"novo";}
 
@@ -1170,14 +1190,24 @@ function carregarPrimeiros(){
    resultado vale por um redesenho; render() limpa. */
 var CACHE_DIA={}, CACHE_LEADS=null;
 function leadsDoRender(){ return CACHE_LEADS||(CACHE_LEADS=todosLeads()); }
+/* Terca e quinta sao dia de follow-up (pedido do Danilo, 05/10): nao entra
+   lead novo; o dia inteiro e para os follow-ups. A rotina da madrugada segue o
+   mesmo calendario (scripts/radar_fila.js). */
+function diaDeFollowup(){ var d=new Date(HOJE+"T12:00:00").getDay(); return d===2||d===4; }
+/* previstos/ids = os leads novos do dia. travado = ainda ha follow-up de hoje
+   por fazer: primeiro os follow-ups, depois os leads novos (pedido do Danilo,
+   05/10 - "nao adianta trazer lead novo se a pessoa nem fez o follow-up").
+   hoje = o que a pessoa pode trabalhar agora (vazio enquanto estiver travado). */
 function loteDoDia(vid){
   if(CACHE_DIA[vid]) return CACHE_DIA[vid];
-  var cota=cotaDe(pessoaDe(vid)), feitos=0, m=STATE.atividade[vid]||{}, k;
+  var fupDia=diaDeFollowup(), cota=fupDia?0:cotaDe(pessoaDe(vid)), feitos=0, m=STATE.atividade[vid]||{}, k;
   for(k in m) if(contaNaCota(vid,k)) feitos++;
   var fila=leadsDoRender().filter(function(l){ return l.vend===vid&&statusDe(vid,l.id)==="novo"; }).sort(ordemFila);
-  var cabem=Math.max(0,cota-feitos), ids={};
-  fila.slice(0,cabem).forEach(function(l){ ids[l.id]=1; });
-  return CACHE_DIA[vid]={cota:cota,feitos:feitos,hoje:fila.slice(0,cabem),ids:ids,espera:Math.max(0,fila.length-cabem),fila:fila.length};
+  var cabem=Math.max(0,cota-feitos), ids={}, previstos=fila.slice(0,cabem);
+  previstos.forEach(function(l){ ids[l.id]=1; });
+  var travado=!fupDia&&fupsDoDia(vid).hoje>0;
+  return CACHE_DIA[vid]={cota:cota,feitos:feitos,fupDia:fupDia,travado:travado,previstos:previstos,
+    hoje:travado?[]:previstos,ids:ids,espera:Math.max(0,fila.length-cabem),fila:fila.length};
 }
 /* faz parte do dia de hoje de quem cuida dele: ainda cabe na cota, ou ja
    recebeu a primeira mensagem hoje */
@@ -1185,8 +1215,13 @@ function noDiaDeHoje(l,dono){
   if(statusDe(dono,l.id)==="novo") return !!loteDoDia(dono).ids[l.id];
   return primeiroHoje(dono,l.id);
 }
-/* lead que esta guardado na fila: o vendedor so ve quando chegar o dia dele */
-function guardado(l,dono){ return statusDe(dono,l.id)==="novo"&&!loteDoDia(dono).ids[l.id]; }
+/* lead novo que o vendedor ainda nao pode ver: esta guardado na fila para
+   outro dia, ou e de hoje mas os follow-ups de hoje ainda nao terminaram */
+function guardado(l,dono){
+  if(statusDe(dono,l.id)!=="novo") return false;
+  var d=loteDoDia(dono);
+  return d.travado||!d.ids[l.id];
+}
 /* Follow-up tambem tem teto por dia: 2x a cota (o follow-up 1 e o follow-up 2
    de um dia cheio). No ritmo normal ninguem chega nele; ele existe para quem
    chega com muito follow-up atrasado nao mandar tudo de uma vez - e exatamente
@@ -1194,16 +1229,19 @@ function guardado(l,dono){ return statusDe(dono,l.id)==="novo"&&!loteDoDia(dono)
    venceram por ultimo (ainda no prazo); os mais antigos esperam o dia seguinte.
    So vale para a cadencia fria (follow-up 1 e 2): reuniao pra confirmar e
    "respondeu e sumiu" aparecem sempre. */
-var FUP_TETO_X=2, CACHE_FUP={};
+var FUP_TETO_X=2, FUP_TETO_X_DIA=3, CACHE_FUP={};
 function ehCadencia(r){ return !!r&&(r.s==="contatado"||r.s==="fup1"); }
+/* Em dia de follow-up (terca e quinta) nao ha lead novo, entao o teto sobe
+   para 3x a cota: o mesmo total de mensagens de um dia comum. lista = os de
+   hoje, na ordem de fazer. */
 function fupsDoDia(vid){
   if(CACHE_FUP[vid]) return CACHE_FUP[vid];
-  var teto=cotaDe(pessoaDe(vid))*FUP_TETO_X, feitos=toquesHoje(vid).fups;
+  var teto=cotaDe(pessoaDe(vid))*(diaDeFollowup()?FUP_TETO_X_DIA:FUP_TETO_X), feitos=toquesHoje(vid).fups;
   var venc=leadsDoRender().filter(function(l){ return l.vend===vid&&precisaFollowup(vid,l.id)&&ehCadencia(regDe(vid,l.id)); });
   venc.sort(function(a,b){ var da=regDe(vid,a.id).d, db=regDe(vid,b.id).d; return da>db?-1:da<db?1:(a.id<b.id?-1:1); });
-  var cabem=Math.max(0,teto-feitos), ids={};
-  venc.slice(0,cabem).forEach(function(l){ ids[l.id]=1; });
-  return CACHE_FUP[vid]={ids:ids,teto:teto,feitos:feitos,hoje:Math.min(cabem,venc.length),espera:Math.max(0,venc.length-cabem)};
+  var cabem=Math.max(0,teto-feitos), ids={}, lista=venc.slice(0,cabem);
+  lista.forEach(function(l){ ids[l.id]=1; });
+  return CACHE_FUP[vid]={ids:ids,lista:lista,teto:teto,feitos:feitos,hoje:lista.length,espera:Math.max(0,venc.length-cabem)};
 }
 /* precisa de follow-up E e de hoje (cabe no teto do dia) */
 function fupHoje(vid,leadId){
@@ -1239,6 +1277,13 @@ function aplicarDono(){
   STATE.lotes.forEach(function(lo){ (lo.itens||[]).forEach(function(l){
     var r=(at[l.vend]||{})[l.id];
     if(r&&r.s&&r.s!=="novo") return;
+    /* follow-up repassado: fica com quem recebeu. So volta se quem passou
+       marcou de novo depois do repasse (estava com a pagina de ontem aberta) */
+    if(l.her&&l.her.v){
+      var prev=(at[l.her.v]||{})[l.id];
+      if(prev&&prev.s&&ativo[l.her.v]&&(prev.s!==l.her.s||String(prev.d||"")!==String(l.her.d||""))){ l.vend=l.her.v; l.her=null; }
+      return;
+    }
     var melhor=null, vid, x;
     for(vid in at){
       if(vid===l.vend||!ativo[vid]) continue;
@@ -1248,8 +1293,9 @@ function aplicarDono(){
     }
     if(melhor) l.vend=melhor.v;
   }); });
+  montarHerdados();
 }
-var REGRA_DO_DIA="30 leads novos por dia, tirados da sua fila. Follow-up 1 dois dias depois da primeira mensagem; follow-up 2 dois dias depois do follow-up 1; depois disso a conversa encerra. Follow-up não entra na cota dos 30 novos. O que não cabe no dia fica guardado e volta sozinho: é esse limite que protege o seu número.";
+var REGRA_DO_DIA="Todo lead recebe três contatos: a primeira mensagem, o follow-up 1 dois dias depois e o follow-up 2 dois dias depois do follow-up 1. Segunda, quarta e sexta: primeiro os follow-ups do dia, depois 30 leads novos. Terça e quinta: só follow-up. O que não cabe no dia fica guardado e volta sozinho — é esse limite que protege o seu número.";
 
 /* ---------- modo sequencia (24/09, pedido do Danilo) ----------
    A primeira mensagem, um lead por vez: o vendedor aperta o botao, o WhatsApp
@@ -1265,11 +1311,26 @@ function seqLer(){
   return null;
 }
 function seqGravar(s){ try{ if(s) localStorage.setItem(seqChave(),JSON.stringify(s)); else localStorage.removeItem(seqChave()); }catch(e){} }
-/* quem ainda espera a primeira mensagem HOJE: os leads novos que cabem na cota
-   do dia (loteDoDia), com WhatsApp. Acabou a cota, acabou a sequencia. */
+/* A sequencia acompanha o passo do dia (05/10): enquanto houver follow-up de
+   hoje, ela traz os follow-ups ("fup"), um por vez; quando eles acabam, passa
+   sozinha para a primeira mensagem dos leads novos ("novo"). */
+function seqModo(){ var v=STATE.vend; return (v&&fupsDoDia(v.id).hoje>0)?"fup":"novo"; }
+/* o follow-up que esta na vez deste lead: 1 (depois da primeira mensagem) ou 2 (depois do 1) */
+function proximoFup(reg){ return reg&&reg.s==="fup1"?2:1; }
+function textoDoFup(l,dono){
+  var reg=regDe(dono,l.id)||{};
+  var t=proximoFup(reg)===2?(semAnuncio(l)?TXT_FUP2_CNPJ:TXT_FUP2):txtFup1(nomeVend(dono),l);
+  return ehGestor(dono)?vozDoDanilo(t):t;
+}
 function seqLista(proprio){
   var v=STATE.vend, s=seqLer(), pulados=(s&&s.pulados)||[];
   if(!v) return [];
+  if(seqModo()==="fup"){
+    /* os de hoje, do mais atrasado para o mais recente; recepcao e lead sem
+       WhatsApp ficam para o cartao, que tem o texto proprio */
+    return fupsDoDia(v.id).lista.filter(function(l){
+      return !!l.wa&&(regDe(v.id,l.id)||{}).m!=="recepcao"&&pulados.indexOf(l.id)<0; }).reverse();
+  }
   return loteDoDia(v.id).hoje.filter(function(l){ return !!l.wa&&pulados.indexOf(l.id)<0; });
 }
 function seqIniciar(){ seqGravar({ativo:true,ultimo:0,pulados:[]}); render(); }
@@ -1277,39 +1338,53 @@ function seqSair(){ seqGravar(null); if(SEQ_TIMER){clearTimeout(SEQ_TIMER);SEQ_T
 function seqPular(id){ var s=seqLer()||{ativo:true,ultimo:0,pulados:[]}; s.pulados=(s.pulados||[]).concat([id]); seqGravar(s); render(); }
 function seqPainel(proprio){
   var v=STATE.vend, s=seqLer()||{ativo:true,ultimo:0,pulados:[]};
-  var fila=seqLista(proprio), l=fila[0], t=toquesHoje(v.id);
+  var modo=seqModo(), fila=seqLista(proprio), l=fila[0], fd=fupsDoDia(v.id), ld=loteDoDia(v.id);
   var cab=el("div",{class:"cb-head"},[
-    el("b",{text:"Modo sequência — primeira mensagem, um lead por vez"}),
-    el("span",{text:"Toques hoje: "+t.total+". Faltam "+fila.length+" na sequência. Aperte o botão verde, mande no WhatsApp (Enter), volte pra cá: o próximo já estará aqui."})
+    el("b",{text:modo==="fup"?"Passo 1 — follow-ups, um por vez":"Passo 2 — primeira mensagem dos leads novos, um por vez"}),
+    el("span",{text:(modo==="fup"
+        ? "Faltam "+fd.hoje+" follow-up(s) de hoje. "
+        : "Faltam "+fila.length+" lead(s) novo(s) de hoje com WhatsApp. ")
+      +"Aperte o botão verde, mande no WhatsApp (Enter) e volte pra cá: o próximo já estará aqui."})
   ]);
   if(!l){
-    var ld=loteDoDia(v.id);
+    var fim = modo==="fup"
+      ? "Os "+fd.hoje+" follow-up(s) que faltam precisam do cartão (empresa sem WhatsApp, recepção, ou você pulou): abra cada um na lista de Follow-ups aqui embaixo."
+      : ld.fupDia ? "Follow-ups de hoje concluídos. Hoje é dia de follow-up: não tem lead novo. Amanhã voltam os leads novos."
+      : ld.feitos>=ld.cota&&ld.cota ? "Você já mandou a primeira mensagem para os "+ld.cota+" leads novos de hoje. É o limite do dia, e é ele que protege o seu número. Amanhã entram mais "+ld.cota+"."
+      : "Não há lead novo com WhatsApp esperando a primeira mensagem.";
     return el("div",{class:"cardbox full",style:"margin:0 0 12px"},[cab,
-      el("div",{class:"empty",text:(ld.feitos>=ld.cota?"Você já mandou a primeira mensagem para os "+ld.cota+" leads novos de hoje. É o limite do dia, e é ele que protege o seu número. Amanhã entram mais "+ld.cota+". ":"Não há lead novo com WhatsApp esperando a primeira mensagem. ")+"Agora é follow-up: use o filtro Follow-ups."}),
+      el("div",{class:"empty",text:fim}),
       el("div",{class:"acts"},[el("button",{class:"btn",onclick:seqSair},[document.createTextNode("Sair do modo sequência")])])
     ]);
   }
-  var dono=donoDoLead(l), souD=ehGestor(dono), msg=msgWhats(l,nomeVend(dono),souD), link=waLink(l.wa,msg);
+  var dono=donoDoLead(l), souD=ehGestor(dono), reg=regDe(dono,l.id)||{};
+  var nFup=proximoFup(reg), de=repassadoDe(dono,l.id);
+  var msg=modo==="fup"?textoDoFup(l,dono):msgWhats(l,nomeVend(dono),souD), link=waLink(l.wa,msg);
   var agora=Date.now(), falta=Math.ceil((SEQ_INTERVALO*1000-(agora-(s.ultimo||0)))/1000);
   var esperar=falta>0&&falta<=SEQ_INTERVALO;
   if(esperar){ if(SEQ_TIMER) clearTimeout(SEQ_TIMER); SEQ_TIMER=setTimeout(function(){SEQ_TIMER=null;render();},Math.min(falta,5)*1000); }
   var botao=esperar
     ? el("button",{class:"btn",disabled:"disabled",style:"opacity:.6"},[document.createTextNode("Aguarde "+falta+" s antes do próximo (protege o número)")])
     : el("a",{class:"btn primary",href:link,target:"_blank",rel:"noopener",onclick:function(){
-        salvarReg(l.id,{s:"contatado",m:"contatado",d:HOJE},dono,true);
+        if(modo==="fup") salvarReg(l.id,{s:nFup===2?"fup2":"fup1",m:"sem_resposta",d:HOJE},dono,true);
+        else salvarReg(l.id,{s:"contatado",m:"contatado",d:HOJE},dono,true);
         var s2=seqLer()||{ativo:true,ultimo:0,pulados:[]}; s2.ultimo=Date.now(); seqGravar(s2);
-        toast("Marcado como contatado — mande no WhatsApp e volte");
+        toast(modo==="fup"?"Follow-up "+nFup+" marcado — mande no WhatsApp e volte":"Marcado como contatado — mande no WhatsApp e volte");
         setTimeout(render,300);
-      }},[document.createTextNode("Abrir no WhatsApp com a mensagem pronta")]);
+      }},[document.createTextNode(modo==="fup"?"Abrir no WhatsApp com o follow-up "+nFup+" pronto":"Abrir no WhatsApp com a mensagem pronta")]);
   return el("div",{class:"cardbox full",style:"margin:0 0 12px;border-left:4px solid var(--accent)"},[cab,
-    el("div",{class:"eyebrow",style:"margin-top:8px",text:"Lead da vez"}),
-    el("div",{},[el("b",{text:l.empresa}),el("span",{class:"meta",text:"  "+(l.nicho||"")+" · "+(l.cidade||"")+" · "+l.wa})]),
+    el("div",{class:"eyebrow",style:"margin-top:8px",text:modo==="fup"?"Follow-up "+nFup+(nFup===2?" (o último)":"")+" — lead da vez":"Lead da vez"}),
+    el("div",{},[el("b",{text:l.empresa}),el("span",{class:"meta",text:"  "+(l.nicho||"")+" · "+(l.cidade||"")+" · "+l.wa
+      +(modo==="fup"?" · última mensagem dia "+dataBR(reg.d)+(de?" (por "+nomeVend(de)+")":""):"")})]),
     el("div",{class:"eyebrow",style:"margin-top:8px",text:"A mensagem que vai (já em "+(souD?"primeira pessoa":"seu nome")+")"}),
     el("div",{class:"scriptbox",text:msg}),
-    el("p",{class:"hint",style:"margin:6px 0 0",text:DICA_NOME_BIO}),
+    el("p",{class:"hint",style:"margin:6px 0 0",text:modo==="fup"
+      ? "Antes de enviar, olhe a conversa no WhatsApp: se ele já respondeu, NÃO mande o follow-up — toque em “Ele respondeu” e classifique a resposta no cartão."+(de?" Este lead foi repassado para você: a mensagem já sai no seu nome.":"")
+      : DICA_NOME_BIO}),
     el("div",{class:"acts",style:"margin-top:8px"},[
       botao,
       el("button",{class:"btn",onclick:function(){copiar(msg)}},[document.createTextNode("copiar texto")]),
+      modo==="fup"?el("button",{class:"btn",onclick:function(){ seqGravar(null); STATE.filtro="fup"; STATE.filtroManual=true; STATE.aberto=l.id; STATE.abertoEraNovo=false; render(); }},[document.createTextNode("Ele respondeu — abrir o cartão")]):null,
       el("button",{class:"btn",onclick:function(){seqPular(l.id)}},[document.createTextNode("Pular este")]),
       el("button",{class:"btn",onclick:seqSair},[document.createTextNode("Sair da sequência")])
     ])
@@ -1387,7 +1462,8 @@ function salvarReg(leadId,patch,vid,semRender){
   var v=STATE.vend; if(!v) return;
   vid=vid||v.id;
   var m=STATE.atividade[vid]||(STATE.atividade[vid]={});
-  var atual=m[leadId]||{};
+  /* regDe: se o lead chegou repassado, o ponto de partida e o estado que veio junto */
+  var atual=m[leadId]||regDe(vid,leadId)||{};
   /* primeira marcacao deste lead: e o primeiro contato, e conta na cota de hoje */
   var primeiro=!!(patch && patch.s && patch.s!=="novo" && (!atual.s||atual.s==="novo"));
   m[leadId]=Object.assign({},atual,patch);
@@ -1440,12 +1516,13 @@ document.addEventListener("focusout",function(){
   setTimeout(function(){ if(RENDER_PEND&&!digitando()) render(); },60);
 });
 
-var VERSAO_RADAR="05/10/2026 - 30 leads novos por dia tirados da fila; follow-up 1 em 2 dias e follow-up 2 em mais 2; fila redistribuida toda madrugada; lead novo so com a base zerada";
+var VERSAO_RADAR="05/10/2026 (2) - follow-ups primeiro, depois 30 leads novos; terca e quinta so follow-up, com repasse dos vencidos; follow-up 1 em 2 dias e follow-up 2 em mais 2; lead novo so com a base zerada";
 /* ---------- gate: quem e voce ---------- */
 function entrarComo(p){
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
   STATE.vend=p; try{localStorage.setItem("radar_vend",p.id)}catch(e){}
   STATE.view=p.gestor?(p.prospecta?"meus":"gerencial"):"leads";
+  STATE.filtroManual=false;
   STATE.pedindoPin=false;
   render();
   sincronizar();
@@ -1841,11 +1918,11 @@ function shell(){
   var nFup=meus.filter(function(l){return fupHoje(donoDoLead(l),l.id)}).length;
   /* o vendedor ve no menu os leads novos que ainda cabem no dia; o gestor, a base toda */
   var nNovos=v.gestor ? meus.filter(function(l){return statusDe(donoDoLead(l),l.id)==="novo"}).length
-                      : loteDoDia(v.id).hoje.length;
+                      : loteDoDia(v.id).previstos.length;
 
   var abas=[];
   if(v.gestor && v.prospecta){
-    abas.push(["meus","Meus leads",loteDoDia(v.id).hoje.length]);
+    abas.push(["meus","Meus leads",loteDoDia(v.id).previstos.length]);
   }
   abas.push(["leads",v.gestor?"Todos os leads":"Meus leads",nNovos]);
   abas.push(["followups","Follow-ups",nFup]);
@@ -1858,7 +1935,7 @@ function shell(){
   ]);
   abas.forEach(function(a){
     nav.appendChild(el("button",{class:"navbtn","aria-current":STATE.view===a[0]?"true":"false",
-      onclick:function(){STATE.view=a[0];STATE.aberto=null;render();window.scrollTo(0,0);}},[
+      onclick:function(){STATE.view=a[0];STATE.aberto=null;STATE.filtroManual=false;render();window.scrollTo(0,0);}},[
       el("span",{class:"ic",html:ICONES[a[0]]||""}),
       el("span",{text:a[1]}),
       a[2]?el("span",{class:"n",text:String(a[2])}):null
@@ -1914,77 +1991,100 @@ var ICONES={
 function viewLeads(main,proprio){
   var v=STATE.vend, meus=proprio?filaPropria():meusLeads();
   var reps=ativos();
-  var cota, timeTodo=!!(v.gestor&&!proprio);
-  var tq={novos:0,fups:0,total:0}, naFila=0, restamHoje=0, fupVencidos=0;
+  var cota, timeTodo=!!(v.gestor&&!proprio), fupDia=diaDeFollowup();
+  var tq={novos:0,fups:0,total:0}, naFila=0, restamHoje=0, fupVencidos=0, meuDia=null, meuFup=null;
   if(timeTodo){
-    cota=reps.reduce(function(a,p){return a+cotaDe(p)},0)||1;
+    cota=reps.reduce(function(a,p){return a+loteDoDia(p.id).cota},0);
     reps.forEach(function(p){ var t=toquesHoje(p.id), d=loteDoDia(p.id);
-      tq.novos+=t.novos; tq.fups+=t.fups; tq.total+=t.total; naFila+=d.fila; restamHoje+=d.hoje.length; });
+      tq.novos+=t.novos; tq.fups+=t.fups; tq.total+=t.total; naFila+=d.fila; restamHoje+=d.previstos.length; });
   } else {
-    var meuDia=loteDoDia(v.id);
+    meuDia=loteDoDia(v.id); meuFup=fupsDoDia(v.id);
     cota=meuDia.cota;
     tq=toquesHoje(v.id);
-    naFila=meuDia.fila; restamHoje=meuDia.hoje.length;
+    naFila=meuDia.fila; restamHoje=meuDia.previstos.length;
   }
   fupVencidos=meus.filter(function(l){return fupHoje(donoDoLead(l),l.id)}).length;
-  var pct=Math.min(100,Math.round(tq.novos/cota*100));
+  var pct=cota?Math.min(100,Math.round(tq.novos/cota*100)):0;
   var guardados=Math.max(0,naFila-restamHoje);
-  var diaTxt = tq.novos>=cota
-    ? ("Você já mandou a primeira mensagem para os "+cota+" leads novos de hoje")
-    : (restamHoje ? ("Hoje: "+restamHoje+" lead(s) novo(s) esperando a primeira mensagem")
+  var diaTxt = fupDia ? "Hoje é dia de follow-up: não tem lead novo"
+    : (cota&&tq.novos>=cota) ? ("Você já mandou a primeira mensagem para os "+cota+" leads novos de hoje")
+    : (restamHoje ? ("Hoje: "+restamHoje+" lead(s) novo(s), depois dos follow-ups")
                   : "Sua fila de leads novos zerou");
   var filaTxt = guardados ? (guardados+" guardado(s) na fila para os próximos dias")
                           : "nenhum guardado na fila: a madrugada repõe";
   var quotaBox=el("div",{class:"quota"},[
-    el("div",{},[el("div",{class:"eyebrow",text:"Novos hoje"}),
-      el("div",{class:"big"},[document.createTextNode(String(tq.novos)),el("s",{text:" / "+cota})])]),
     el("div",{},[el("div",{class:"eyebrow",text:"Follow-ups hoje"}),
-      el("div",{class:"big"},[document.createTextNode(String(tq.fups)),el("s",{text:fupVencidos?" · "+fupVencidos+" pra hoje":" · em dia"})])]),
+      el("div",{class:"big"},[document.createTextNode(String(tq.fups)),el("s",{text:fupVencidos?" · faltam "+fupVencidos:" · em dia"})])]),
+    el("div",{},[el("div",{class:"eyebrow",text:"Novos hoje"}),
+      el("div",{class:"big"},[document.createTextNode(String(tq.novos)),el("s",{text:fupDia?" · dia de follow-up":" / "+cota})])]),
     el("div",{class:"bar"},[el("i",{class:pct>=100?"done":"",style:"width:"+pct+"%"})])
   ]);
+  /* o filtro acompanha o passo da vez (follow-ups primeiro) enquanto a pessoa
+     nao escolher outro na mao */
+  if(!timeTodo&&!STATE.filtroManual) STATE.filtro=(meuFup.hoje>0||fupDia)?"fup":"hoje";
 
   main.appendChild(el("div",{class:"page-head"},[
     el("div",{},[
       el("h1",{text:timeTodo?"Todos os leads":"Meus leads"}),
       el("p",{text:timeTodo
-        ? ("Visão do time inteiro. Ainda sem a primeira mensagem: "+naFila+" de "+meus.length+" na base. Cada vendedor recebe "+COTA_PADRAO+" por dia; lead novo só volta a entrar quando essa fila zerar. O nome do vendedor responsável aparece em cada linha.")
+        ? ("Visão do time inteiro. Ainda sem a primeira mensagem: "+naFila+" de "+meus.length+" na base. "+(fupDia?"Hoje é dia de follow-up (terça e quinta): ninguém recebe lead novo. ":"Cada vendedor faz primeiro os follow-ups do dia e depois recebe "+COTA_PADRAO+" leads novos. ")+"Lead novo só volta a entrar na base quando essa fila zerar. O nome do vendedor responsável aparece em cada linha.")
         : v.gestor
         ? ("Sua fila pessoal. "+diaTxt+"; "+filaTxt+". Os textos do cartão já saem na sua voz, e o que você marcar aqui entra no ranking e no histórico como o dos vendedores.")
         : (diaTxt+"; "+filaTxt+". Seu objetivo em cada um é marcar 20 minutinhos entre o dono e o Danilo — você não apresenta valor.")})
     ]),
     quotaBox
   ]));
-  if(!timeTodo) main.appendChild(el("div",{class:"regra",style:"margin:0 0 12px"},[
-    el("b",{text:"Como funciona o seu dia"}),
-    el("div",{text:REGRA_DO_DIA})
-  ]));
-  /* modo sequencia: so na fila propria (vendedor, ou o gestor em "Meus leads") */
+  /* O dia em dois passos, na fila propria (vendedor, ou o gestor em "Meus
+     leads"): primeiro os follow-ups de hoje, depois os leads novos. O passo 2
+     so abre quando o passo 1 termina. */
   if(!timeTodo){
-    var sq=seqLer();
-    if(sq&&sq.ativo) main.appendChild(seqPainel(proprio));
-    else {
-      var nSeq=seqLista(proprio).length;
-      main.appendChild(el("div",{class:"cardbox full",style:"margin:0 0 12px"},[
-        el("div",{class:"cb-head"},[
-          el("b",{text:"Modo sequência — a primeira mensagem, um lead por vez"}),
-          el("span",{text:nSeq+" lead(s) de hoje com WhatsApp esperando a primeira mensagem. Você aperta um botão, manda no WhatsApp, volta, e o próximo já está aqui. Quem envia é você; o radar organiza, marca e segura "+SEQ_INTERVALO+" segundos entre um envio e outro pra proteger o número."})
-        ]),
-        el("div",{class:"acts"},[el("button",{class:nSeq?"btn primary":"btn",onclick:seqIniciar},[document.createTextNode(nSeq?"Começar a sequência":"Ver a sequência (nada pra enviar agora)")])])
-      ]));
-    }
+    var pend=meuFup.hoje, sq=seqLer(), seqAtiva=!!(sq&&sq.ativo);
+    var extras=Math.max(0,fupVencidos-pend);   /* reuniao pra confirmar, quem respondeu e sumiu */
+    var irPara=function(f,comSeq){ return function(){ STATE.filtro=f; STATE.filtroManual=false; STATE.aberto=null; if(comSeq) seqIniciar(); else render(); }; };
+    var p1Txt = pend
+      ? pend+" follow-up(s) para fazer agora."+(meuFup.feitos?" Você já fez "+meuFup.feitos+" hoje.":"")
+        +(meuFup.espera?" Outros "+meuFup.espera+" já venceram e voltam amanhã (o teto é de "+meuFup.teto+" por dia, para não arriscar o seu número).":"")
+      : meuFup.feitos ? "Concluído: "+meuFup.feitos+" follow-up(s) feito(s) hoje."+(meuFup.espera?" Os outros "+meuFup.espera+" vencidos voltam amanhã.":"")
+      : "Nenhum follow-up vence hoje.";
+    if(extras) p1Txt+=" Na lista de Follow-ups há mais "+extras+" lembrete(s) de reunião ou de quem respondeu e sumiu.";
+    var p2Txt = fupDia ? "Hoje é dia de follow-up (terça e quinta): não tem lead novo. Amanhã eles voltam."
+      : pend ? "Travado. Abre sozinho quando você terminar o passo 1 (falta"+(pend>1?"m ":" ")+pend+" follow-up"+(pend>1?"s":"")+")."
+      : (cota&&meuDia.feitos>=cota) ? "Concluído: você já mandou a primeira mensagem para os "+cota+" leads novos de hoje. Amanhã entram mais."
+      : meuDia.hoje.length ? meuDia.hoje.length+" lead(s) novo(s) para hoje"+(meuDia.feitos?" (já fez "+meuDia.feitos+" de "+cota+")":"")+"."
+      : "Sua fila de leads novos zerou. A madrugada repõe.";
+    var p1Feito=!pend, p2Aberto=!pend&&!fupDia&&meuDia.hoje.length>0;
+    var passoDoDia=function(n,feito,ativo,tit,txt,botao){
+      return el("div",{class:"passo",style:"margin-bottom:10px"+(ativo?"":";opacity:"+(feito?".75":".6"))},[
+        el("i",{style:feito?"background:var(--ok)":(ativo?"":"background:var(--text-3)"),text:feito?"✓":String(n)}),
+        el("div",{},[el("div",{class:"tit",text:tit}),el("div",{class:"txt",text:txt}),
+          botao?el("div",{class:"acts",style:"margin-top:8px"},[botao]):null])
+      ]);
+    };
+    main.appendChild(el("div",{class:"cardbox full",id:"passos",style:"margin:0 0 12px"},[
+      el("div",{class:"cb-head"},[
+        el("b",{text:"Seu dia, passo a passo"}),
+        el("span",{text:"Primeiro os follow-ups, depois os leads novos. Não adianta abrir conversa nova e deixar para trás quem já recebeu mensagem."})
+      ]),
+      passoDoDia(1,p1Feito,!!pend,"Passo 1 — Follow-ups de hoje",p1Txt,
+        (pend&&!seqAtiva)?el("button",{class:"btn primary",onclick:irPara("fup",true)},[document.createTextNode("Começar os follow-ups (um por vez)")]):null),
+      passoDoDia(2,!pend&&!fupDia&&cota>0&&meuDia.feitos>=cota,p2Aberto,"Passo 2 — Leads novos"+(fupDia?"":" ("+cotaDe(v)+" por dia)"),p2Txt,
+        (p2Aberto&&!seqAtiva)?el("button",{class:"btn primary",onclick:irPara("hoje",true)},[document.createTextNode("Começar os leads novos (um por vez)")]):null),
+      el("div",{class:"txt",style:"font-size:12px;color:var(--text-3);margin-top:2px",text:REGRA_DO_DIA})
+    ]));
+    if(seqAtiva) main.appendChild(seqPainel(proprio));
   }
 
   /* o vendedor nao tem filtro de "nao contatados": o que nao cabe no dia fica guardado */
   var filtros=timeTodo
     ? [["hoje","Novos de hoje (time)"],["fup","Follow-ups"],["novo","Não contatados (base toda)"],["A","Quentes"],
        ["andamento","Em andamento"],["reuniao","Reuniões"],["todos","Todos"]]
-    : [["hoje","Novos de hoje"],["fup","Follow-ups"],["A","Quentes"],
+    : [["fup","1. Follow-ups de hoje"],["hoje","2. Leads novos"],["A","Quentes"],
        ["andamento","Em andamento"],["reuniao","Reuniões"],["todos","Todos"]];
   if(!timeTodo&&STATE.filtro==="novo") STATE.filtro="hoje";
   var fr=el("div",{class:"filters"});
   filtros.forEach(function(f){
     fr.appendChild(el("button",{class:"chip","aria-pressed":STATE.filtro===f[0]?"true":"false",
-      onclick:function(){STATE.filtro=f[0];render()}},[document.createTextNode(f[1])]));
+      onclick:function(){STATE.filtro=f[0];STATE.filtroManual=true;render()}},[document.createTextNode(f[1])]));
   });
   fr.appendChild(el("input",{class:"search",type:"text",placeholder:"Buscar empresa ou nicho…",
     value:STATE.busca,oninput:function(e){STATE.busca=e.target.value;desenharLista(lista,v,proprio);}}));
@@ -2026,16 +2126,21 @@ function desenharLista(cont,v,proprio){
   cont.innerHTML="";
   var timeTodo=!!(v.gestor&&!proprio);
   var arr=ordenar(filtrar(proprio?filaPropria():meusLeads(),timeTodo));
-  /* por que nao ha lead novo na tela: bateu a cota do dia, ou a fila zerou */
-  var dia=timeTodo?null:loteDoDia(v.id);
-  var fimDoDia=!dia ? "Nenhum lead novo esperando a primeira mensagem hoje no time."
-    : dia.feitos>=dia.cota
-      ? "Você já mandou a primeira mensagem para os "+dia.cota+" leads novos de hoje. É o limite do dia, e é ele que protege o seu WhatsApp. Agora vá para Follow-ups. Amanhã entram mais "+dia.cota+"."
-      : "Sua fila de leads novos zerou. Na próxima madrugada o Radar repõe: primeiro com leads que outros vendedores ainda não trabalharam, e com lead novo quando a base inteira zerar. Enquanto isso, vá para Follow-ups.";
+  /* por que nao ha lead novo na tela: dia de follow-up, follow-ups de hoje por
+     fazer, cota do dia batida, ou a fila zerou */
+  var dia=timeTodo?null:loteDoDia(v.id), pend=timeTodo?0:fupsDoDia(v.id).hoje;
+  var fimDoDia=!dia ? (diaDeFollowup()?"Hoje é dia de follow-up: ninguém recebe lead novo.":"Nenhum lead novo esperando a primeira mensagem hoje no time.")
+    : dia.fupDia ? "Hoje é dia de follow-up (terça e quinta): não tem lead novo. Faça os follow-ups; amanhã os leads novos voltam."
+    : dia.travado ? "Os leads novos de hoje abrem assim que você terminar os follow-ups (falta"+(pend>1?"m ":" ")+pend+"). Toque em “1. Follow-ups de hoje”."
+    : (dia.cota&&dia.feitos>=dia.cota)
+      ? "Você já mandou a primeira mensagem para os "+dia.cota+" leads novos de hoje. É o limite do dia, e é ele que protege o seu WhatsApp. Amanhã entram mais "+dia.cota+"."
+      : "Sua fila de leads novos zerou. Na próxima madrugada o Radar repõe: primeiro com leads que outros vendedores ainda não trabalharam, e com lead novo quando a base inteira zerar.";
   if(!arr.length){
     var msg="Nenhum lead com esse filtro. Troque o filtro acima.";
     if(STATE.filtro==="hoje") msg=fimDoDia;
-    if(STATE.filtro==="fup") msg="Nenhum follow-up para fazer agora. Vá para “Em andamento” (quem respondeu e ainda não fechou) ou volte para os novos de hoje.";
+    if(STATE.filtro==="fup") msg=timeTodo ? "Nenhum follow-up para fazer agora no time."
+      : (dia.fupDia ? "Follow-ups de hoje concluídos. Hoje não tem lead novo: amanhã eles voltam."
+                    : "Follow-ups de hoje concluídos. Agora o passo 2: toque em “2. Leads novos”.");
     cont.appendChild(el("div",{class:"empty",text:msg}));
     return;
   }
@@ -2056,11 +2161,12 @@ function linha(l,v){
 
   var meta=(l.nicho||"")+(l.cidade?" · "+l.cidade:"");
   if(v.gestor && dono!==v.id) meta+=" · "+nomeVend(dono);
-  var herd=historicoOutro(l,dono);
-  if(herd) meta+=" · JA TRABALHADO POR "+nomeVend(herd.vend).toUpperCase();
+  var herd=historicoOutro(l,dono), repasse=repassadoDe(dono,l.id);
+  if(repasse) meta+=" · FOLLOW-UP REPASSADO DE "+nomeVend(repasse).toUpperCase();
+  else if(herd) meta+=" · JA TRABALHADO POR "+nomeVend(herd.vend).toUpperCase();
   var venc=vencimento(reg);
   if(reg.d){
-    meta+=" · falou dia "+dataBR(reg.d);
+    meta+=(repasse?" · última mensagem dia ":" · falou dia ")+dataBR(reg.d);
     if(venc) meta+=(diasDesde(venc)>=0?" · FOLLOW-UP VENCEU "+dataBR(venc)
                                       :" · próximo toque "+dataBR(venc));
   }
@@ -2340,8 +2446,18 @@ function corpo(l,dono,st){
     el("dt",{text:"Último toque"}), el("dd",{text:reg.d?(dataBR(reg.d)+" — "+diasDesde(reg.d)+" dia(s) atrás"):"ainda não falou com ele"})
   ]);
 
-  var herd=historicoOutro(l,dono), avisoHerd=null;
-  if(herd){
+  var herd=historicoOutro(l,dono), avisoHerd=null, repasse=repassadoDe(dono,l.id);
+  if(repasse){
+    /* follow-up repassado em dia de follow-up: nao e conversa pra retomar, e so
+       mandar o follow-up da vez - o texto ja sai no nome de quem envia */
+    avisoHerd=el("div",{class:"regra",style:"margin-bottom:14px"},[
+      el("b",{text:"Follow-up repassado para você"}),
+      el("div",{text:nomeVend(repasse)+" mandou a última mensagem para esta empresa em "+dataBR(reg.d)+
+        " e o follow-up ficou sem fazer. Agora ele é seu: o botão verde já abre o WhatsApp com o follow-up certo, no seu nome. "+
+        "Se a empresa responder, a conversa segue com você."}),
+      (herd&&herd.reg.o)?el("div",{style:"margin-top:7px;font-style:italic",text:"Anotação de quem falou antes: "+herd.reg.o}):null
+    ]);
+  } else if(herd){
     var rh=herd.reg, mh=rh.m?MOTIVO_POR_ID[rh.m]:null;
     avisoHerd=el("div",{class:"regra",style:"margin-bottom:14px"},[
       el("b",{text:"Lead herdado — leia antes de mandar mensagem"}),
@@ -2428,15 +2544,19 @@ function viewRanking(main){
   });
   var tot={contatados:0,hoje:0,respostas:0,reunioes:0,fechados:0,novos:0,fups:0};
   linhas.forEach(function(x){for(var k in tot)tot[k]+=x.s[k]||0});
-  var cotaTime=reps.reduce(function(a,p){return a+cotaDe(p)},0);
+  var fupDia=diaDeFollowup();
+  var cotaTime=fupDia?0:reps.reduce(function(a,p){return a+cotaDe(p)},0);
+  var cotaCheia=reps.reduce(function(a,p){return a+cotaDe(p)},0);
   var filaV=filaPorVendedor(), filaTime=0;
   reps.forEach(function(p){ filaTime+=filaV[p.id]||0; });
 
   main.appendChild(el("div",{class:"stats"},[
     stat("Reuniões marcadas",String(tot.reunioes),"o entregável do time neste mês"),
-    stat("Novos hoje",String(tot.novos),"cota do time: "+cotaTime+" por dia · "+tot.fups+" follow-up(s) hoje"),
-    stat("Fila sem trabalhar",String(filaTime),filaTime>=cotaTime
-      ? "cobre "+Math.floor(filaTime/Math.max(1,cotaTime))+" dia(s) de cota cheia; lead novo só entra quando zerar"
+    stat(fupDia?"Follow-ups hoje":"Novos hoje",String(fupDia?tot.fups:tot.novos),fupDia
+      ? "terça e quinta são dia de follow-up: ninguém recebe lead novo"
+      : "cota do time: "+cotaTime+" por dia · "+tot.fups+" follow-up(s) hoje"),
+    stat("Fila sem trabalhar",String(filaTime),filaTime>=cotaCheia
+      ? "cobre "+Math.floor(filaTime/Math.max(1,cotaCheia))+" dia(s) de cota cheia; lead novo só entra quando zerar"
       : "base zerando: a madrugada completa a cota com lead novo"),
     stat("Taxa de resposta",tot.contatados?Math.round(tot.respostas/tot.contatados*100)+"%":"—",tot.contatados+" contatos no mês"),
     stat("Fechados pelo Danilo",String(tot.fechados),"R$ "+(tot.fechados*TICKET).toLocaleString("pt-BR")+"/mês recorrente")
@@ -2451,13 +2571,13 @@ function viewRanking(main){
   ])]));
   var tbody=el("tbody");
   linhas.forEach(function(x){
-    var cota=cotaDe(x.p), pct=Math.min(100,Math.round(x.s.novos/cota*100));
+    var cota=cotaDe(x.p), pct=fupDia?0:Math.min(100,Math.round(x.s.novos/cota*100));
     tbody.appendChild(el("tr",{},[
       el("td",{},[el("div",{style:"display:flex;align-items:center;gap:8px"},[
         el("span",{class:"av",style:"background:"+corDe(x.p.id)+";width:22px;height:22px;font-size:9.5px",
           text:iniciais(x.p.nome)}),
         el("span",{style:"font-weight:600",text:x.p.nome})])]),
-      el("td",{class:"num",text:x.s.novos+" / "+cota}),
+      el("td",{class:"num",text:fupDia?"—":x.s.novos+" / "+cota}),
       el("td",{},[el("div",{class:"trackbar"},[el("i",{style:"width:"+pct+"%"})])]),
       el("td",{class:"num",text:String(x.s.fups)}),
       el("td",{class:"num",style:(filaV[x.p.id]||0)?"":"color:var(--quente);font-weight:600",text:String(filaV[x.p.id]||0)}),
@@ -3671,7 +3791,8 @@ function resumoDoDia(){
   var d = HOJE.split("-");
   var t = "*Resumo do dia — " + v.nome + "*\n" + d[2] + "/" + d[1] + "\n\n";
   var dia = loteDoDia(v.id);
-  t += "Leads novos (1ª mensagem): " + dia.feitos + " de " + dia.cota + "\n";
+  t += dia.fupDia ? "Dia de follow-up (sem lead novo)\n"
+                  : "Leads novos (1ª mensagem): " + dia.feitos + " de " + dia.cota + "\n";
   t += "Marcações no dia: " + hoje.enviadas + "\n";
   t += "Responderam: " + hoje.responderam + "\n";
   t += "Follow-ups feitos: " + hoje.followups + "\n";
