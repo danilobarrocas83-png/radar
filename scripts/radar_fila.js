@@ -6,7 +6,11 @@
      repartidos por igual entre as filas toda madrugada. Quem zera a fila recebe dos outros.
    - Lead novo só entra quando a base não dá mais a cota do dia para todo mundo, e só de
      empresas com capital declarado até R$ 200 mil.
-   - Lead trabalhado nunca muda de fila: ele é de quem marcou.
+   - Terça e quinta são dia de follow-up: não entra lead novo, e os follow-ups vencidos são
+     repartidos por igual entre as filas, para ninguém ficar sem trabalho e nenhum lead ficar
+     sem os três contatos (primeira mensagem, follow-up 1 e follow-up 2). O lead repassado
+     leva junto o estado em que estava (campo `her`); a mensagem sai no nome de quem envia.
+   - Fora desse repasse, lead trabalhado não muda de fila: ele é de quem marcou.
 
    Este arquivo não lê nem grava nada: recebe os dados e devolve o plano. Quem lê e grava
    é o scripts/remessa.js (rotina) e o scripts/le_banco.js (GitHub Actions). Assim as
@@ -19,8 +23,31 @@
 
   var CAP_MAX = 200000;
   var COTA_PADRAO = 30;
-  /* por quantos dias um lead já trabalhado continua no radar depois do último toque */
+  /* por quantos dias um lead já encerrado continua no radar depois do último toque. Quem
+     ainda deve follow-up (contatado, fup1) nunca sai: os três contatos são obrigação. */
   var GUARDA = { perdido: 5, bloqueado: 5, fup2: 7, aberto: 21 };
+  var FUP1_DIAS = 2, FUP2_DIAS = 2;
+  /* terça (2) e quinta (4): dia de follow-up */
+  function diaDeFollowup(iso) {
+    var d = new Date(iso + "T12:00:00Z").getUTCDay();
+    return d === 2 || d === 4;
+  }
+  /* O estado do lead para quem cuida dele hoje: a marcação do dono; se ele recebeu o lead
+     já trabalhado e ainda não marcou nada, o estado que veio junto no repasse. */
+  function estadoDe(l, at) {
+    var regs = at[l.id];
+    if (regs && regs[l.vend]) return regs[l.vend];
+    if (regs && l.her && l.her.s) return { s: l.her.s, d: l.her.d, m: l.her.m || "" };
+    return null;
+  }
+  /* follow-up da cadência vencido (o de recepção tem texto próprio e fica com o dono) */
+  function fupVencido(r, hoje) {
+    if (!r) return false;
+    var dias = diasEntre(r.d, hoje);
+    if (r.s === "contatado" && r.m !== "recepcao") return dias >= FUP1_DIAS;
+    if (r.s === "fup1") return dias >= FUP2_DIAS;
+    return false;
+  }
   var COLS = ["basico", "cnpj", "empresa", "nicho", "bloco", "cidade", "uf", "wa", "tel", "email", "gancho", "oferta",
               "prio", "score", "dataInicio", "porte", "natureza", "capital", "rnd", "key", "phoneKey"];
 
@@ -118,7 +145,7 @@
   /* ---------- estado do banco (pool/atividade.tsv) ---------- */
   /* Lê a tabela atividade inteira, de 1000 em 1000 (limite do Supabase por pedido). */
   function lerAtividade(fetchFn, base, chaves) {
-    var caminho = "atividade?select=vend,lead,s,d&order=vend.asc,lead.asc";
+    var caminho = "atividade?select=vend,lead,s,m,d&order=vend.asc,lead.asc";
     function comChave(k) {
       var tudo = [], passo = 1000;
       function pagina(ini) {
@@ -151,18 +178,20 @@
     if (!chaves.length) throw new Error("nenhuma chave publica no HTML");
     return { base: u[1].replace(/\/+$/, "") + "/rest/v1/", chaves: chaves };
   }
-  /* Só o que a rotina precisa: lead, vendedor, status e data, dos leads que estão no radar. */
+  /* Só o que a rotina precisa: lead, vendedor, status, data e o botão marcado, dos leads
+     que estão no radar. */
   function tsvAtividade(linhas, ids, agoraIso) {
     var uteis = [];
     linhas.forEach(function (x) {
       var v = String((x && x.vend) || ""), l = String((x && x.lead) || ""), s = String((x && x.s) || "");
+      var m = String((x && x.m) || "").replace(/[^a-z_]/g, "");
       if (!v || !l || !s || !ids[l] || /[\t\n\r]/.test(v + l + s)) return;
-      uteis.push([l, v, s, String(x.d || "").slice(0, 10)]);
+      uteis.push([l, v, s, String(x.d || "").slice(0, 10), m]);
     });
     uteis.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0); });
     var nIds = 0, k; for (k in ids) nIds++;
     var t = "# gerado_utc=" + agoraIso + " linhas=" + uteis.length + " linhas_banco=" + linhas.length + " leads_no_radar=" + nIds + "\n" +
-            "lead\tvend\ts\td\n";
+            "lead\tvend\ts\td\tm\n";
     uteis.forEach(function (u) { t += u.join("\t") + "\n"; });
     return { texto: t, linhas: uteis.length };
   }
@@ -174,16 +203,16 @@
       var p = ln.split("\t");
       if (p[0] === "lead" && p[1] === "vend") return;
       if (p.length < 3) return;
-      out.linhas.push({ lead: p[0], vend: p[1], s: p[2], d: p[3] || "" });
+      out.linhas.push({ lead: p[0], vend: p[1], s: p[2], d: p[3] || "", m: p[4] || "" });
     });
     return out;
   }
-  /* lead -> { vendedor -> {s,d} }, só do que foi realmente trabalhado */
+  /* lead -> { vendedor -> {s,d,m} }, só do que foi realmente trabalhado */
   function mapaAtividade(linhas) {
     var porLead = {};
     (linhas || []).forEach(function (x) {
       if (!x || !x.lead || !x.vend || !x.s || x.s === "novo") return;
-      (porLead[x.lead] = porLead[x.lead] || {})[x.vend] = { s: x.s, d: String(x.d || "").slice(0, 10) };
+      (porLead[x.lead] = porLead[x.lead] || {})[x.vend] = { s: x.s, d: String(x.d || "").slice(0, 10), m: String(x.m || "") };
     });
     return porLead;
   }
@@ -207,15 +236,27 @@
       return n;
     });
     var res = { filas: filas, cota: cota, leads: leads, seguro: !o.atividade, corrigidos: 0, removidos: 0, movidos: 0,
-                livresAntes: {}, livresDepois: {}, alvo: {}, novosPorFila: {}, novosTotal: 0, U: 0, C: 0, orfaos: 0 };
+                livresAntes: {}, livresDepois: {}, alvo: {}, novosPorFila: {}, novosTotal: 0, U: 0, C: 0, orfaos: 0,
+                fupDia: diaDeFollowup(o.hoje), fupAntes: {}, fupDepois: {}, fupTotal: 0, fupRepassados: 0, baseCheia: false };
     filas.forEach(function (v) { res.novosPorFila[v] = 0; });
     /* Sem o estado do banco não dá para saber quem foi trabalhado: não mexe em nada. */
     if (!o.atividade) return res;
     var at = o.atividade;
 
-    /* 1. o lead é de quem trabalhou nele (entre os ativos) */
+    /* 1. o lead é de quem trabalhou nele (entre os ativos). A exceção é o follow-up
+       repassado (her): fica com quem recebeu, a não ser que quem passou tenha marcado de
+       novo depois do repasse - aí o lead volta para ele. */
     leads.forEach(function (l) {
-      var regs = at[l.id]; if (!regs || regs[l.vend]) return;
+      var regs = at[l.id];
+      if (!regs || regs[l.vend]) { if (l.her) delete l.her; return; }
+      if (l.her && l.her.v) {
+        var prev = regs[l.her.v];
+        if (!prev || (prev.s === l.her.s && prev.d === l.her.d)) return;
+        if (ativo[l.her.v]) { l.vend = l.her.v; delete l.her; res.corrigidos++; return; }
+        l.her = { v: l.her.v, s: prev.s, d: prev.d, m: prev.m || "" };
+        return;
+      }
+      if (l.her) delete l.her;
       var melhor = null;
       Object.keys(regs).sort().forEach(function (v) {
         if (!ativo[v]) return;
@@ -224,12 +265,14 @@
       if (melhor) { l.vend = melhor.v; res.corrigidos++; }
     });
 
-    /* 2. sai do radar o que já foi encerrado há dias (o registro continua no banco) */
+    /* 2. sai do radar o que já foi encerrado há dias (o registro continua no banco).
+       Quem ainda deve follow-up não sai nunca. */
     leads = leads.filter(function (l) {
       var regs = at[l.id]; if (!regs) return true;
-      var r = regs[l.vend];
+      var r = estadoDe(l, at);
       if (!r) Object.keys(regs).forEach(function (v) { if (!r || regs[v].d > r.d) r = regs[v]; });
       if (r.s === "reuniao" || r.s === "proposta" || r.s === "fechado") return true;
+      if (r.s === "contatado" || r.s === "fup1") return true;
       var limite = GUARDA[r.s] !== undefined ? GUARDA[r.s] : GUARDA.aberto;
       var dias = diasEntre(r.d, o.hoje);
       if (dias > limite) { res.removidos++; return false; }
@@ -305,20 +348,70 @@
         Object.keys(grupos).forEach(function (k) { livres[v] = livres[v].concat(grupos[k].porFila[v]); });
       });
     } else {
-      /* Base zerando: cada fila fecha a cota do dia; o que faltar vem de lead novo. */
+      /* Base zerando: cada fila fecha a cota do dia; o que faltar vem de lead novo
+         (menos em dia de follow-up, quando ninguém trabalha lead novo). */
       filas.forEach(function (v) { alvo[v] = cota[v]; });
-      res.novosTotal = C - U;
       falta = repartir(livres, orfaos, alvo);
+      if (!res.fupDia) res.novosTotal = C - U;
     }
+    res.baseCheia = U >= C;
     res.alvo = alvo;
     filas.forEach(function (v) { res.livresDepois[v] = livres[v].length; res.novosPorFila[v] = res.novosTotal ? falta[v] : 0; });
+
+    /* 5. Dia de follow-up (terça e quinta): os follow-ups vencidos são repartidos por igual.
+       Quem tem mais do que a sua parte cede os mais atrasados; quem tem menos (ou nenhum)
+       recebe. O lead leva o estado em que estava, para quem recebe mandar o follow-up certo. */
+    var fups = {}, soltosF = [];
+    filas.forEach(function (v) { fups[v] = []; });
+    leads.forEach(function (l) {
+      var r = estadoDe(l, at);
+      if (!fupVencido(r, o.hoje)) return;
+      var item = { l: l, r: r };
+      if (ativo[l.vend]) fups[l.vend].push(item); else soltosF.push(item);
+    });
+    var T = soltosF.length;
+    filas.forEach(function (v) { T += fups[v].length; res.fupAntes[v] = fups[v].length; });
+    res.fupTotal = T;
+    if (res.fupDia && T) {
+      var alvoF = {}, somaF = 0, doadosF = soltosF.slice();
+      filas.forEach(function (v) { alvoF[v] = Math.floor(T * cota[v] / C); somaF += alvoF[v]; });
+      filas.slice().sort(function (a, b) { return (fups[b].length - alvoF[b]) - (fups[a].length - alvoF[a]) || (a < b ? -1 : 1); })
+           .slice(0, T - somaF).forEach(function (v) { alvoF[v]++; });
+      function maisAtrasado(a, b) { return a.r.d < b.r.d ? -1 : a.r.d > b.r.d ? 1 : (a.l.id < b.l.id ? -1 : 1); }
+      filas.forEach(function (v) {
+        var sobra = fups[v].length - alvoF[v];
+        if (sobra <= 0) return;
+        var ord = fups[v].slice().sort(maisAtrasado);
+        doadosF = doadosF.concat(ord.slice(0, sobra));
+        fups[v] = ord.slice(sobra);
+      });
+      doadosF.sort(maisAtrasado);
+      var faltaF = {}, recebF = [], k = 0;
+      filas.forEach(function (v) { faltaF[v] = Math.max(0, alvoF[v] - fups[v].length); if (faltaF[v] > 0) recebF.push(v); });
+      doadosF.forEach(function (it) {
+        if (!recebF.length) return;
+        var t = 0;
+        while (t < recebF.length && faltaF[recebF[k % recebF.length]] <= 0) { k++; t++; }
+        if (t >= recebF.length) return;
+        var v = recebF[k % recebF.length]; k++;
+        var regs = at[it.l.id];
+        /* de quem é o estado que vai junto: de quem marcou por último */
+        var de = (regs && regs[it.l.vend]) ? it.l.vend : (it.l.her && it.l.her.v) || it.l.vend;
+        it.l.her = { v: de, s: it.r.s, d: it.r.d, m: it.r.m || "" };
+        it.l.vend = v;
+        fups[v].push(it); faltaF[v]--; res.fupRepassados++;
+      });
+    }
+    filas.forEach(function (v) { res.fupDepois[v] = fups[v].length; });
     return res;
   }
 
-  /* Os leads novos de cada fila hoje, na ordem em que o radar mostra (para as planilhas). */
+  /* Os leads novos de cada fila hoje, na ordem em que o radar mostra (para as planilhas).
+     Em dia de follow-up não há lead novo: devolve as filas vazias. */
   function leadsDoDia(plano, atividade) {
     var out = {};
     plano.filas.forEach(function (v) {
+      if (plano.fupDia) { out[v] = []; return; }
       out[v] = plano.leads.filter(function (l) { return l.vend === v && !atividade[l.id]; })
         .sort(ordemFila).slice(0, plano.cota[v]);
     });
@@ -454,16 +547,23 @@
       plano.leads.forEach(function (l) {
         var a = antesIds[l.id]; if (!a) { erros.push("lead desconhecido: " + l.id); return; }
         var regs = atividade[l.id];
-        if (regs && l.vend !== a.vend && !regs[l.vend]) erros.push("lead trabalhado mudou de fila: " + l.id);
+        /* lead trabalhado só muda de fila como follow-up repassado, levando o estado junto */
+        var repasse = !!(regs && l.her && l.her.s && regs[l.her.v]);
+        if (regs && l.vend !== a.vend && !regs[l.vend] && !repasse) erros.push("lead trabalhado mudou de fila sem levar o estado: " + l.id);
+        if (repasse && !plano.fupDia && l.vend !== a.vend) erros.push("follow-up repassado fora do dia de follow-up: " + l.id);
+        if (!regs && l.her) erros.push("lead nao trabalhado com estado de repasse: " + l.id);
         if (!regs && !ativo[l.vend] && plano.filas.length) erros.push("lead nao trabalhado ficou fora das filas ativas: " + l.id);
       });
-      var porFila = {};
+      var porFila = {}, somaAntes = 0, somaDepois = 0;
       (novos || []).forEach(function (l) { porFila[l.vend] = (porFila[l.vend] || 0) + 1; });
       plano.filas.forEach(function (v) {
         var tem = plano.livresDepois[v];
-        if (!plano.novosTotal && tem !== plano.alvo[v]) erros.push("fila " + v + " ficou com " + tem + ", o alvo era " + plano.alvo[v]);
+        if (plano.baseCheia && tem !== plano.alvo[v]) erros.push("fila " + v + " ficou com " + tem + ", o alvo era " + plano.alvo[v]);
         if (tem + (porFila[v] || 0) > plano.alvo[v]) erros.push("fila " + v + " passou do alvo");
+        somaAntes += plano.fupAntes[v] || 0; somaDepois += plano.fupDepois[v] || 0;
       });
+      if (plano.fupDia && somaDepois !== plano.fupTotal) erros.push("follow-ups vencidos nao fecham: " + plano.fupTotal + " no total, " + somaDepois + " nas filas");
+      if (!plano.fupDia && (novos || []).length === 0 && plano.fupRepassados) erros.push("repasse de follow-up fora do dia");
     }
     return erros.slice(0, 20);
   }
@@ -473,6 +573,7 @@
     diasEntre: diasEntre, capDoGancho: capDoGancho, ordemFila: ordemFila, lerAtividade: lerAtividade,
     bancoDoHtml: bancoDoHtml, tsvAtividade: tsvAtividade, parseTsvAtividade: parseTsvAtividade,
     mapaAtividade: mapaAtividade, filasAtivas: filasAtivas, planejar: planejar, leadsDoDia: leadsDoDia,
+    diaDeFollowup: diaDeFollowup, estadoDe: estadoDe, fupVencido: fupVencido,
     parsePool: parsePool, selecionarNovos: selecionarNovos, montarNovos: montarNovos, conferir: conferir };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.RadarFila = api;

@@ -7,7 +7,9 @@
       mensagem. Quem zerou a fila recebe dos outros. Lead trabalhado não muda de fila.
    3. Só quando a base não dá mais a cota do dia (30 por fila) é que completa com lead novo
       do pool, e só de empresas com capital declarado até R$ 200 mil.
-   4. Aplica o código do radar (scripts/radar_codigo.html) e grava a saída.
+   4. Terça e quinta (dia de follow-up): não entra lead novo e os follow-ups vencidos são
+      repartidos por igual entre as filas; não grava leads_do_dia.json.
+   5. Aplica o código do radar (scripts/radar_codigo.html) e grava a saída.
    As regras ficam em scripts/radar_fila.js; aqui é só leitura e gravação.
 
    Uso (na raiz do repositório):
@@ -121,7 +123,12 @@ function main() {
     resumo.push("por fila, antes -> depois: " + plano.filas.map((v) => v + "=" + plano.livresAntes[v] + "->" + plano.livresDepois[v]).join(" "));
     resumo.push("movidos entre filas=" + plano.movidos + " devolvidos a quem ja tinha trabalhado=" + plano.corrigidos + " encerrados que sairam do radar=" + plano.removidos);
     resumo.push(plano.novosTotal ? ("BASE ZERADA: faltam " + plano.novosTotal + " para fechar a cota do dia; entram leads novos")
-                                 : ("sem lead novo: a base ainda cobre " + (plano.U / plano.C).toFixed(1) + " dia(s) de cota"));
+      : (plano.fupDia && !plano.baseCheia) ? "base zerando, mas hoje e dia de follow-up: lead novo so no proximo dia de lead novo"
+      : ("sem lead novo: a base ainda cobre " + (plano.U / plano.C).toFixed(1) + " dia(s) de cota"));
+    resumo.push("follow-ups vencidos na base=" + plano.fupTotal + " | por fila" + (plano.fupDia ? ", antes -> depois: " : ": ") +
+                plano.filas.map((v) => v + "=" + plano.fupAntes[v] + (plano.fupDia ? "->" + plano.fupDepois[v] : "")).join(" "));
+    resumo.push(plano.fupDia ? ("DIA DE FOLLOW-UP (terca e quinta): ninguem recebe lead novo hoje; follow-ups repassados entre filas=" + plano.fupRepassados)
+                             : "dia de lead novo (segunda, quarta e sexta): follow-up fica com quem mandou a mensagem; o repasse e na terca e na quinta");
   }
 
   /* lead novo, só com a base zerada */
@@ -171,7 +178,8 @@ function main() {
   fs.writeFileSync(path.join(a.saida, "radar.html"), htmlNovo);
   fs.writeFileSync(path.join(a.saida, "radar_nuvem.html"), R.semInvolucro(htmlNovo));
   ["leads_do_dia.json", "leads_novos.json"].forEach((n) => { const p = path.join(a.saida, n); if (fs.existsSync(p)) fs.unlinkSync(p); });
-  if (!plano.seguro) {
+  /* em dia de follow-up não há lead novo para ninguém: sem lista do dia, sem planilha */
+  if (!plano.seguro && !plano.fupDia) {
     const planoFinal = { filas: plano.filas, cota: plano.cota, leads: lista };
     fs.writeFileSync(path.join(a.saida, "leads_do_dia.json"), JSON.stringify(R.leadsDoDia(planoFinal, atividade), null, 1));
   }
