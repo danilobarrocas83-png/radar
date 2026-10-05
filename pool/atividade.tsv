@@ -1,4 +1,4 @@
-# gerado_utc=2026-10-05T18:01:22Z linhas=761 linhas_banco=3621 leads_no_radar=2750
+# gerado_utc=2026-10-05T18:07:43Z linhas=728 linhas_banco=3621 leads_no_radar=2717
 lead	vend	s	d
 085-piscinas-comercio-8958	v13	contatado	2026-10-01
 1000-autos-repasses-8317	v3	contatado	2026-09-29
@@ -12,7 +12,6 @@ a-hora-e-essa-auto-repasse-8389	v3	contatado	2026-09-29
 a-l-m-gomes-9245	v11	contatado	2026-10-01
 a-mais-top-do-bras-8474	v4	perdido	2026-10-01
 a-veloz-textil-10232	v4	perdido	2026-10-05
-abn-engenharia-da-beleza-one-7929	v4	perdido	2026-09-28
 abronia-9094	v2	contatado	2026-10-01
 acaray-mangueiras-9812	v4	contatado	2026-10-05
 acerto-confeccoes-8722	v16	contatado	2026-09-29
@@ -32,7 +31,6 @@ alagoana-locadora-de-veiculos-8365	v3	contatado	2026-09-29
 albernaz-atacadista-8566	v16	contatado	2026-09-29
 albimaxx-9060	v4	fup1	2026-10-05
 alcantara-negocios-8397	v14	contatado	2026-09-30
-alegre-in-con-8714	v4	perdido	2026-09-29
 aleksander-fernando-delmutti-9016	v9	contatado	2026-10-01
 alexa-joias-7950	v3	contatado	2026-09-28
 alexsander-comercio-de-veiculos-9001	v5	contatado	2026-10-01
@@ -47,7 +45,6 @@ alpha-suplementos-8916	v4	fup1	2026-10-05
 alpine-do-brasil-8710	v16	contatado	2026-09-29
 alplas-embalagens-8224	v16	contatado	2026-09-28
 alta-gama-prime-8718	v9	contatado	2026-09-29
-altis-premium-cars-7657	v5	perdido	2026-09-28
 altiva-importadora-e-distribuidora-de-bi-9000	v4	perdido	2026-10-05
 alugue-mais-locadora-de-automoveis-8461	v3	contatado	2026-09-29
 alumaxi-9280	v9	contatado	2026-10-01
@@ -67,7 +64,6 @@ ampec-autopecas-8130	v13	contatado	2026-09-30
 ampla-7830	v11	contatado	2026-09-28
 an-locacoes-e-empreendimentos-7799	v4	fup1	2026-10-05
 ana-julia-calcados-8664	v2	contatado	2026-09-29
-ana-paula-aparecida-turrao-bueno-7630	v4	perdido	2026-09-28
 anacapri-manauara-10196	v4	contatado	2026-10-05
 ancoradouro-distribuidora-e-comercio-de-8660	v13	contatado	2026-09-30
 andrax-comercio-e-servicos-8458	v16	contatado	2026-09-29
@@ -200,13 +196,11 @@ cardoso-atacadista-distribuicao-7744	gestor	contatado	2026-09-28
 carina-honorato-de-souza-8595	v5	contatado	2026-10-02
 carlota-shoes-7796	gestor	contatado	2026-09-28
 carmax-autos-8331	v5	perdido	2026-10-02
-carmenatto-confeccoes-8522	v4	perdido	2026-09-29
 carmotos-9527	v4	perdido	2026-10-02
 casa-do-eletrecista-7664	v4	perdido	2026-10-05
 casa-do-militar-9720	v5	contatado	2026-10-02
 casa-dos-craques-9896	v4	contatado	2026-10-05
 casa-light-presentes-8964	v4	perdido	2026-10-05
-casa-primavera-8028	v5	perdido	2026-09-28
 casal-8240	v3	contatado	2026-09-28
 castro-car-empreendimentos-8503	v11	contatado	2026-09-29
 catarinense-implantes-8557	v3	contatado	2026-09-29
@@ -219,7 +213,6 @@ center-atacadista-8432	v13	contatado	2026-09-30
 center-car-comercio-de-veiculos-8479	v11	contatado	2026-09-29
 central-9474	v13	contatado	2026-10-01
 centro-automotivo-jr-pneus-8300	v13	contatado	2026-09-30
-centro-de-cirurgia-plastica-botafogo-7911	v4	perdido	2026-09-28
 centro-de-distribuicao-de-alimentos-plen-8058	v3	contatado	2026-09-28
 centro-de-referencia-em-cirurgia-plastic-7909	v13	contatado	2026-09-30
 centro-estetico-keila-medina-7915	v3	contatado	2026-09-28
@@ -244,7 +237,6 @@ cnr-comercio-e-servicos-8254	v4	fup1	2026-10-05
 co2-energia-solar-9096	v4	fup1	2026-10-05
 coimi-empreendimentos-imobiliarios-8167	v9	contatado	2026-09-28
 colorshoes-comercio-de-calcados-e-acesso-10328	v4	contatado	2026-10-05
-comauto-administradora-de-consorcio-8251	gestor	perdido	2026-09-28
 comercial-cristovam-rio-preto-7662	v13	contatado	2026-09-30
 comercial-ribeiro-ltda-7734	v4	perdido	2026-10-05
 comercial-rl-8342	v4	perdido	2026-10-01
@@ -267,7 +259,6 @@ costura-tudo-aviamentos-8150	v4	fup1	2026-10-05
 country-cia-8982	v13	contatado	2026-10-01
 cralp-9660	v5	contatado	2026-10-02
 credeasy-9437	v11	contatado	2026-10-01
-crestan-8762	v4	perdido	2026-09-29
 criare-construcao-e-incorporacao-ltda-8623	v11	contatado	2026-09-29
 cristal-piscinas-gold-10148	v4	contatado	2026-10-05
 crom-centro-de-reabilitacao-oral-e-maxil-8017	gestor	contatado	2026-09-28
@@ -287,10 +278,8 @@ defilippi-shoes-calcados-8350	v16	contatado	2026-09-29
 dellasul-7930	v5	perdido	2026-09-30
 denovo-shoes-8228	v4	bloqueado	2026-10-05
 dentistas-de-gente-pequena-8019	v3	contatado	2026-09-28
-deoforte-confeccoes-7982	v5	perdido	2026-09-28
 deposito-primavera-9944	v4	perdido	2026-10-05
 dermato-e-plastica-9281	v11	contatado	2026-10-01
-diag-systems-8858	v4	perdido	2026-09-29
 dione-motos-9567	v9	contatado	2026-10-02
 distribuidora-de-alimentos-progresso-8202	v4	fup1	2026-10-05
 diva-cosmeticos-perfumaria-e-commerce-8690	v4	bloqueado	2026-10-01
@@ -316,13 +305,11 @@ edilu-perfumaria-e-cosmeticos-8136	v3	contatado	2026-09-28
 edivan-ritz-farias-10340	v4	contatado	2026-10-05
 eduvi-pedras-do-brasil-7834	v16	contatado	2026-09-28
 ekling-variedades-7912	v16	contatado	2026-09-28
-eldorado-administradora-de-consorcio-8229	v5	perdido	2026-09-28
 elegance-dental-8063	v9	contatado	2026-09-28
 elite-locacoes-e-servicos-7751	v9	contatado	2026-09-28
 elite-moda-vestuario-e-acessorios-9396	v4	perdido	2026-10-05
 ello-malharia-8030	gestor	contatado	2026-09-28
 elotriz-manutencao-eletrica-7904	v5	contatado	2026-09-28
-em-aquicultura-8163	v4	perdido	2026-09-28
 emporio-do-aco-8094	v16	contatado	2026-09-28
 era-do-gelo-servicos-8998	v2	contatado	2026-10-01
 espaco-cred-8225	gestor	contatado	2026-09-28
@@ -363,7 +350,6 @@ fsb-construcoes-e-incorporacoes-8629	v3	contatado	2026-09-29
 fsp-suplementos-9516	v5	contatado	2026-10-02
 full-fitness-ltda-8112	v5	contatado	2026-09-28
 fundo-de-acoes-irs-8198	v16	contatado	2026-09-28
-fv-ferreira-e-vieira-advogados-associado-8119	v4	perdido	2026-09-28
 g-car-multimarcas-8921	v11	contatado	2026-10-01
 g-m-calcados-8590	v16	contatado	2026-09-29
 gaby-joias-8190	v5	contatado	2026-09-28
@@ -378,7 +364,6 @@ gois-de-lima-comercio-atacadista-9126	v13	contatado	2026-10-01
 gold-dreams-com-atac-de-joias-metais-e-p-8676	v2	contatado	2026-09-29
 gotardo-locacao-de-motos-9491	v4	perdido	2026-10-02
 granrivel-7757	gestor	contatado	2026-09-28
-grazielli-de-freitas-consorcios-imobilia-8271	v9	perdido	2026-09-28
 green-cred-corretora-e-locadora-de-veicu-9515	v4	fup1	2026-10-05
 grs-roupas-intimas-9204	v4	fup1	2026-10-05
 grupo-evoluicred-9421	v5	contatado	2026-10-01
@@ -402,14 +387,12 @@ high-pers-10268	v4	contatado	2026-10-05
 homec-dermatologia-7969	v5	contatado	2026-09-28
 homero-marchezan-8141	v9	contatado	2026-09-28
 huber-mondini-7748	v5	contatado	2026-10-02
-id8-7968	v4	perdido	2026-09-28
 idea-industria-e-comercio-de-paineis-ele-8212	gestor	contatado	2026-09-28
 ie-odontologia-9731	v4	fup1	2026-10-05
 ilha-implantes-odontologicos-8081	v16	contatado	2026-09-28
 implementos-rodoviarios-m3-8082	gestor	contatado	2026-09-28
 independencia-caminhoes-7785	v3	contatado	2026-09-28
 infinity-pecas-8020	v4	fup1	2026-10-05
-iniciativa-fitness-7660	v9	perdido	2026-09-28
 innovare-clinica-odontologica-9373	v5	contatado	2026-10-01
 inovar-comercial-importacao-e-exportacao-9214	v2	perdido	2026-10-01
 inovar-solucoes-e-servcos-em-ti-7902	v3	contatado	2026-09-28
@@ -443,7 +426,6 @@ jjr-comercio-e-servicos-9588	v5	contatado	2026-10-02
 jl-tecidos-7644	v5	fup1	2026-10-02
 jmc-veiculos-9479	v4	fup1	2026-10-05
 jmv-comercio-importacao-e-exportacao-8340	v2	contatado	2026-09-29
-joana-angelica-santos-sales-widmer-8215	v4	perdido	2026-09-28
 jovem-textil-8534	v4	fup1	2026-10-05
 jr-perfis-8086	v5	contatado	2026-09-28
 ju-rossi-cosmeticos-8594	v4	fup1	2026-10-05
@@ -454,7 +436,6 @@ jz-medicina-ocupacional-e-odontologia-9377	v11	contatado	2026-10-01
 k-g-g-estetica-7907	v9	contatado	2026-09-28
 k-r-tecidos-9444	v4	perdido	2026-10-05
 k-s-cosmeticos-9318	v13	contatado	2026-10-01
-kaloma-cosmetics-7682	v4	perdido	2026-09-28
 kamylla-modas-9006	v13	contatado	2026-10-01
 keter-8-comercial-8024	v9	contatado	2026-09-28
 kf-do-brasil-8128	v9	contatado	2026-09-28
@@ -482,7 +463,6 @@ ledtoys-tecnologia-e-distribuicao-de-mod-9162	v13	contatado	2026-10-01
 lev-moto-8957	v11	contatado	2026-10-01
 lf-car-comercio-de-veiculos-8413	v3	contatado	2026-09-29
 lider-rent-a-car-9121	v5	contatado	2026-10-01
-lily-confeccoes-8810	v4	perdido	2026-09-29
 limeira-construcao-eletrico-hidraulico-9072	v4	perdido	2026-10-01
 limeira-veiculos-9049	v5	perdido	2026-10-01
 lina-bijuterias-e-variedades-7738	v9	contatado	2026-09-28
@@ -522,15 +502,12 @@ make-store-belem-9980	v4	contatado	2026-10-05
 malhas-e-tecidos-palazzo-9306	v13	contatado	2026-10-01
 manaus-automotive-9636	v5	contatado	2026-10-02
 manocar-7837	v3	contatado	2026-09-28
-marilia-moveis-e-decoracao-7696	v5	perdido	2026-09-28
 marvelle-feira-de-santana-7903	v4	fup1	2026-10-05
 materia-prima-suplementos-balneario-camb-10364	v4	contatado	2026-10-05
 matheus-suplementos-7956	v5	contatado	2026-09-28
 mattos-atividade-odontologica-8545	v3	contatado	2026-09-29
 max-car-multimarcas-7627	gestor	contatado	2026-09-28
-max-joias-7786	v4	perdido	2026-09-28
 med-life-8021	v5	contatado	2026-09-28
-mega-dias-distribuidora-8268	v5	perdido	2026-09-28
 mega-motos-atacado-e-varejo-9113	v11	contatado	2026-10-01
 mega-plas-sacos-plasticos-em-geral-9264	v4	perdido	2026-10-05
 megga-veiculos-e-locacao-7881	v9	contatado	2026-09-28
@@ -574,11 +551,8 @@ neycar-compra-e-venda-de-veiculos-9017	v11	contatado	2026-10-01
 nicar-veiculos-7653	gestor	contatado	2026-09-28
 noe-ser-7920	v9	contatado	2026-09-28
 not-me-8880	v4	fup1	2026-10-05
-novaretti-quintella-estetica-e-bem-estar-7917	v5	perdido	2026-09-28
 ns-solucoes-e-negocios-9539	v4	fup1	2026-10-05
-nunes-comercio-atacadista-e-varejo-8206	v9	perdido	2026-09-28
 nuria-regina-da-rosa-alves-7965	gestor	contatado	2026-09-28
-nut-on-8798	v4	perdido	2026-09-29
 nutri-mais-9330	v13	contatado	2026-10-01
 nutri-mel-9768	v5	contatado	2026-10-02
 nutriforca-saude-e-bem-estar-8606	v4	bloqueado	2026-10-01
@@ -592,7 +566,6 @@ odontocompany-campos-eliseos-9389	v11	contatado	2026-10-01
 odontocompany-itaberai-8069	gestor	contatado	2026-09-28
 odontocompany-tancredo-neves-8085	v4	fup1	2026-10-05
 ojo-pelotas-9012	v4	perdido	2026-10-05
-omega-esportes-8510	v4	perdido	2026-09-29
 onloc-locacoes-9013	v5	contatado	2026-10-01
 onodera-marajoara-9707	v4	fup1	2026-10-05
 opcao-veiculos-7643	v4	perdido	2026-10-05
@@ -616,7 +589,6 @@ palermo-comercio-exterior-9168	v4	fup1	2026-10-05
 panificadora-duas-irmas-9420	v4	fup1	2026-10-05
 papelaria-center-hnz-9144	v4	perdido	2026-10-05
 para-motos-9029	v11	contatado	2026-10-01
-paradise-nutrition-7812	v4	perdido	2026-09-28
 parra-martins-sociedade-de-advogados-8099	v5	contatado	2026-09-28
 pascoal-dias-industria-e-comercio-de-cal-9480	v5	contatado	2026-10-02
 passagiro-locacoes-7803	v9	contatado	2026-09-28
@@ -655,7 +627,6 @@ raizes-tecnologias-9732	v5	contatado	2026-10-02
 rayan-hallef-advogados-associados-8599	v11	contatado	2026-09-29
 rcar-multimarcas-veiculos-8989	v5	contatado	2026-10-01
 real-otica-7816	v9	contatado	2026-09-28
-renato-rossi-sociedade-de-advogados-8611	v11	perdido	2026-09-29
 reserva-cota-9755	v4	perdido	2026-10-02
 resolve-cred-8267	v4	perdido	2026-10-05
 revendedora-e-locadora-de-veiculos-tobie-7705	gestor	contatado	2026-09-28
@@ -673,7 +644,6 @@ royal-face-rolandia-9229	v5	contatado	2026-10-01
 rs-veiculos-9109	v5	contatado	2026-10-01
 rsl-aviamentos-8294	v4	fup1	2026-10-05
 rtg-engenharia-8177	v5	contatado	2026-09-28
-rz-prime-7963	v4	perdido	2026-09-28
 s-m-distribuidora-8726	v4	perdido	2026-10-01
 s-s-shin-9378	v13	contatado	2026-10-01
 s-w-distribuidora-e-transportadora-sousa-10304	v4	contatado	2026-10-05
@@ -690,11 +660,9 @@ sergio-s-9800	v4	perdido	2026-10-05
 serln-comercio-e-servicos-9198	v13	contatado	2026-10-01
 shoemix-9932	v4	contatado	2026-10-05
 shu-limpeza-10112	v4	contatado	2026-10-05
-siam-8702	v4	perdido	2026-09-29
 silvano-veiculos-8945	v11	contatado	2026-10-01
 skala-tecidos-9992	v4	contatado	2026-10-05
 sm-equipamentos-de-seguranca-9684	v5	contatado	2026-10-02
-soe-centro-de-beleza-7913	gestor	perdido	2026-09-28
 sofarsolar-brasil-8934	v13	contatado	2026-10-01
 soma-atacado-9336	v4	fup1	2026-10-05
 song-fardamentos-9540	v5	contatado	2026-10-02
@@ -717,7 +685,6 @@ suprentec-offshore-10316	v4	perdido	2026-10-05
 sw-calcados-8712	v2	contatado	2026-09-29
 t-arrigoni-9456	v4	perdido	2026-10-01
 t-gad-queijos-vinhos-7722	v5	fup1	2026-10-02
-talhar-industria-comercio-e-servicos-de-8666	v4	perdido	2026-09-29
 tg-mob-8299	v11	contatado	2026-09-29
 th-custom-9186	v13	contatado	2026-10-01
 thop-18-9767	v4	perdido	2026-10-02
