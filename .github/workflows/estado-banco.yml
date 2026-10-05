@@ -1,0 +1,48 @@
+# Copia o estado das marcacoes do time (Supabase) para pool/atividade.tsv.
+# A rotina da madrugada do Radar roda num ambiente que nao alcanca o banco; e por este
+# arquivo que ela sabe quem ainda nao foi trabalhado, para repartir a fila e so trazer
+# lead novo quando a base zerar. No banco, so leitura.
+#
+# Dispara: quando a rotina pede (commit em pool/pedir_estado.txt), de madrugada por
+# seguranca, e a mao em Actions > "Estado do banco" > Run workflow.
+name: Estado do banco
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pool/pedir_estado.txt"
+      - "scripts/le_banco.js"
+      - "scripts/radar_fila.js"
+      - ".github/workflows/estado-banco.yml"
+  schedule:
+    - cron: "10 5 * * 1-5"   # 02h10 em Fortaleza
+    - cron: "10 6 * * 1-5"   # 03h10 em Fortaleza
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: estado-banco
+  cancel-in-progress: false
+
+jobs:
+  copiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ler a tabela atividade
+        run: node scripts/le_banco.js --html radar.html --saida pool/atividade.tsv
+      - name: Gravar no repositorio
+        run: |
+          git config user.name "Radar Comercial"
+          git config user.email "radar@users.noreply.github.com"
+          git add pool/atividade.tsv
+          git commit -m "Estado do banco para a rotina" || exit 0
+          for i in 1 2 3 4; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 6
+          done
+          exit 1
