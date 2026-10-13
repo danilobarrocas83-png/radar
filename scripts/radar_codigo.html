@@ -1171,7 +1171,9 @@ function contaNaCota(vid,leadId){
 }
 function carregarPrimeiros(){
   if(!sbConfigurado()) return Promise.resolve(false);
-  return sbTudo("historico?select=vend,lead,d&ev=like.p1:*&d=eq."+HOJE+"&order=id.asc")
+  /* 13/10: o vendedor le so os primeiros contatos DELE; os dos outros nao
+     mudam a cota dele. O gestor le de todo mundo (sao poucas linhas por dia). */
+  return sbTudo("historico?select=vend,lead,d&ev=like.p1:*&d=eq."+HOJE+escopoLeitura()+"&order=id.asc")
     .then(function(linhas){
       (linhas||[]).forEach(function(x){ if(x&&x.vend&&x.lead) PRIM[x.vend+"|"+x.lead]=String(x.d||HOJE).slice(0,10); });
       return true;
@@ -1512,7 +1514,7 @@ document.addEventListener("focusout",function(){
   setTimeout(function(){ if(RENDER_PEND&&!digitando()) render(); },60);
 });
 
-var VERSAO_RADAR="05/10/2026 (2) - follow-ups primeiro, depois 30 leads novos; terca e quinta so follow-up, com repasse dos vencidos; follow-up 1 em 2 dias e follow-up 2 em mais 2; lead novo so com a base zerada";
+var VERSAO_RADAR="13/10/2026 - leitura do banco enxuta, para caber na cota do plano Free do Supabase: o vendedor le so a propria fila a cada 10 min, o gestor le tudo uma vez e depois so o que mudou a cada 5 min, historico so os toques novos; aviso claro quando o banco esta bloqueado (HTTP 402); reenvio com espera quando o banco recusa";
 /* ---------- gate: quem e voce ---------- */
 function entrarComo(p){
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
@@ -1521,7 +1523,7 @@ function entrarComo(p){
   STATE.filtroManual=false;
   STATE.pedindoPin=false;
   render();
-  sincronizar();
+  sincronizar("tudo");
 }
 
 /* A entrada do gestor pede PIN. Nao e cofre: e so pra um vendedor nao
@@ -1753,16 +1755,22 @@ function avisoSync(){
   var filaParada = FILA.length>0 && FILA_DESDE>0 && (Date.now()-FILA_DESDE>20000);
   var travado = (DIAG.leituraOk===false) || (DIAG.escritaOk===false) || filaParada;
   if(!travado) return null;
-  var det=[];
+  var det=[], bloqueado=bancoBloqueado();
   if(FILA.length) det.push(FILA.length+" marcacao(oes) ainda nao subiram");
-  if(DIAG.escritaErro) det.push("ao salvar: "+DIAG.escritaErro);
-  if(DIAG.leituraErro) det.push("ao ler: "+DIAG.leituraErro);
+  if(bloqueado){
+    det.push("o banco respondeu HTTP 402: a cota mensal de trafego do Supabase estourou e o projeto fica bloqueado ate a cota voltar. Nao e a sua internet. Suas marcacoes ficam guardadas neste aparelho e sobem sozinhas quando o banco voltar - nao limpe os dados do navegador");
+  } else {
+    if(DIAG.escritaErro) det.push("ao salvar: "+DIAG.escritaErro);
+    if(DIAG.leituraErro) det.push("ao ler: "+DIAG.leituraErro);
+  }
   return el("div",{class:"alerta"},[
     el("div",{style:"min-width:0"},[
-      el("b",{text:"O que voce marcar nao esta chegando no painel do Danilo."}),
+      el("b",{text:bloqueado ? "O banco esta bloqueado (cota mensal do Supabase estourada). O que voce marcar fica guardado aqui e sobe sozinho quando ele voltar."
+                             : "O que voce marcar nao esta chegando no painel do Danilo."}),
       el("div",{class:"det",text:det.join(" · ") || "sem resposta do banco"})
     ]),
     el("button",{class:"btn-alerta",onclick:function(){
+      ENVIO_APOS=0; ENVIO_H_APOS=0;
       var n=reenviarTudo();
       if(window.console) console.log("[radar] reenviando "+n+" registros");
     }},[document.createTextNode("Reenviar agora")])
@@ -1836,7 +1844,7 @@ function painelDiagnostico(main){
   linha("Leitura do banco",
         DIAG.leituraOk===null?"ainda nao tentou":(DIAG.leituraOk?("ok as "+DIAG.lidoAs):("FALHOU - "+DIAG.leituraErro)),
         DIAG.leituraOk===null?"":(DIAG.leituraOk?okc:ruim));
-  linha("Registros vindos do banco", String(DIAG.linhas), DIAG.linhas?okc:ruim);
+  linha("Registros vindos do banco (ultima leitura)", String(DIAG.linhas)+(DIAG.linhasTotal?" · "+DIAG.linhasTotal+" na leitura cheia":""), DIAG.leituraOk?okc:ruim);
   linha("Ultimo envio",
         DIAG.escritaOk===null?"nada enviado nesta sessao":(DIAG.escritaOk?("ok as "+DIAG.enviadoAs):("FALHOU - "+DIAG.escritaErro)),
         DIAG.escritaOk===null?"":(DIAG.escritaOk?okc:ruim));
@@ -1849,6 +1857,9 @@ function painelDiagnostico(main){
         DIAG.histEscritaOk===null?"":(DIAG.histEscritaOk?okc:ruim));
   linha("Toques na fila", String(FILA_H.length), FILA_H.length?ruim:okc);
   linha("Versao desta pagina", VERSAO_RADAR);
+  linha("Leituras do banco hoje (esta maquina)", LEITURA.pedidosHoje+" pedido(s) · "+kbTexto(LEITURA.bytesHoje), LEITURA.bytesHoje>50*1048576?ruim:okc);
+  linha("Ritmo de leitura", (STATE.vend&&STATE.vend.gestor)?"gestor: tudo ao abrir a pagina, depois so o que mudou, a cada 5 min":"vendedor: so a propria fila, a cada 10 min");
+  linha("Cota do Supabase (plano Free)", "5 GB de trafego por mes para o time todo; estourou em 10/2026 com a leitura antiga (tabela inteira a cada 30 s)");
 
   var porV=el("div",{style:"margin-top:12px"});
   porV.appendChild(el("div",{class:"eyebrow",text:"Registros por vendedor",style:"margin-bottom:6px"}));
@@ -1865,8 +1876,8 @@ function painelDiagnostico(main){
   p.appendChild(porV);
 
   p.appendChild(el("div",{style:"display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"},[
-    el("button",{class:"btn-alerta",onclick:function(){ sincronizar().then(function(){ render(); }); }},
-      [document.createTextNode("Reler o banco agora")]),
+    el("button",{class:"btn-alerta",onclick:function(){ sincronizar("tudo").then(function(){ render(); }); }},
+      [document.createTextNode("Reler o banco agora (leitura cheia)")]),
     el("button",{class:"btn-alerta",onclick:function(){ reenviarTudo(); }},
       [document.createTextNode("Reenviar tudo que esta nesta maquina")])
   ]));
@@ -3056,6 +3067,52 @@ function horaAgora(){
   var d=new Date();
   return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
 }
+
+/* ---------- leitura enxuta do banco (13/10/2026) ----------
+   O projeto do Supabase foi bloqueado por estourar a cota mensal de trafego
+   do plano Free (HTTP 402, exceed_egress_quota). A causa era esta pagina: a
+   cada 30 s, em toda aba aberta, ela baixava a tabela "atividade" INTEIRA
+   (milhares de linhas) e, na aba Historico, a tabela "historico" inteira.
+   Com o time todo de aba aberta, isso passava de 1 GB por dia. Agora:
+   - o vendedor le so as linhas DELE (vend=eq.X). Das outras pessoas ele so
+     precisa saber se um lead da fila dele ja foi trabalhado por alguem, e
+     isso vem numa consulta so dos ids da fila dele (resposta quase vazia);
+   - o gestor le tudo UMA vez por carga da pagina; depois so o que mudou
+     (d >= ontem - a data d e sobrescrita a cada clique, entao "mudou" e
+     "d recente"). A copia completa fica no espelho local (localStorage);
+   - o intervalo e de 10 min (vendedor) e 5 min (gestor), so com a aba
+     visivel; trocar de aba nao dispara leitura antes da hora;
+   - o historico e lido inteiro uma vez e depois so id > ultimo;
+   - cada byte lido e contado e aparece no painel Sincronizacao do Gerencial.
+   Conta de padeiro: 11 pessoas de aba aberta 10 h por dia ficam abaixo de
+   30 MB por dia (menos de 1 GB por mes), contra 5 GB de cota. */
+var LEITURA = { cheiaFeita:false, ultimaEm:0, outrosEm:0, dia:"", pedidosHoje:0, bytesHoje:0 };
+var SYNC_MS_VEND = 10*60000, SYNC_MS_GESTOR = 5*60000, OUTROS_MS = 30*60000;
+function intervaloSync(){ return (STATE.vend && STATE.vend.gestor) ? SYNC_MS_GESTOR : SYNC_MS_VEND; }
+function lerContadorLeitura(){
+  try{
+    var x = JSON.parse(localStorage.getItem("radar_leitura")||"null");
+    if(x && x.d===HOJE){ LEITURA.dia=x.d; LEITURA.pedidosHoje=x.n||0; LEITURA.bytesHoje=x.b||0; }
+  }catch(e){}
+}
+function contarLeitura(bytes){
+  if(LEITURA.dia!==HOJE){ LEITURA.dia=HOJE; LEITURA.pedidosHoje=0; LEITURA.bytesHoje=0; }
+  LEITURA.pedidosHoje++; LEITURA.bytesHoje += (bytes||0);
+  try{ localStorage.setItem("radar_leitura", JSON.stringify({d:HOJE,n:LEITURA.pedidosHoje,b:LEITURA.bytesHoje})); }catch(e){}
+}
+function kbTexto(b){ return b>=1048576 ? (b/1048576).toFixed(1)+" MB" : Math.round((b||0)/1024)+" KB"; }
+function ontemIso(){ var d=new Date(HOJE+"T12:00:00"); d.setDate(d.getDate()-1); return dataLocal(d); }
+/* o vendedor so le as linhas dele; o gestor le de todo mundo */
+function escopoLeitura(){
+  var v=STATE.vend; if(!v || v.gestor) return "";
+  return "&vend=eq."+encodeURIComponent(v.id);
+}
+/* HTTP 402 = o Supabase bloqueou o projeto por cota estourada */
+function bancoBloqueado(){
+  var re=/(^|[^0-9])402([^0-9]|$)/;
+  return re.test(String(DIAG.escritaErro||"")) || re.test(String(DIAG.leituraErro||"")) || re.test(String(DIAG.histEscritaErro||""));
+}
+lerContadorLeitura();
 try{ var _ki = parseInt(localStorage.getItem("radar_chave"),10);
      if(_ki >= 0 && _ki < SB.keys.length) SB.i = _ki; }catch(e){}
 function sbChave(){ return SB.keys[SB.i]; }
@@ -3154,6 +3211,11 @@ function reenviarTudo(){
 }
 
 var ESCOANDO = false;
+/* 13/10: quando o banco recusa (por exemplo HTTP 402, cota estourada), nao
+   adianta insistir a cada 20 s: espera 2 min, depois 5. Uma marcacao nova,
+   a internet voltando ou o botao "Reenviar agora" tentam na hora. */
+var ENVIO_APOS = 0, ENVIO_FALHAS = 0, ENVIO_H_APOS = 0, ENVIO_H_FALHAS = 0;
+function esperaEnvio(falhas){ return falhas <= 1 ? 120000 : 300000; }
 function escoar(){
   if(ESCOANDO || !FILA.length) return;
   if(!sbConfigurado()){ STATE.sync = "offline"; pintarSync(); return; }
@@ -3174,6 +3236,7 @@ function escoar(){
     FILA = FILA.filter(function(x){ return !chaves[x.vend+" "+x.lead]; });
     gravarFila();
     ESCOANDO = false;
+    ENVIO_APOS = 0; ENVIO_FALHAS = 0;
     DIAG.escritaOk = true; DIAG.escritaErro = ""; DIAG.enviadoAs = horaAgora();
     STATE.sync = FILA.length ? "pendente" : "ok";
     if(!FILA.length) FILA_DESDE = 0;
@@ -3183,8 +3246,12 @@ function escoar(){
     if(FILA.length) escoar();
   }).catch(function(e){
     ESCOANDO = false;
+    ENVIO_FALHAS++; ENVIO_APOS = Date.now() + esperaEnvio(ENVIO_FALHAS);
     DIAG.escritaOk = false; DIAG.escritaErro = e.message;
-    STATE.sync = "pendente"; pintarSync(); pedirRender();
+    STATE.sync = "pendente"; pintarSync();
+    /* redesenha para o aviso aparecer; se ja esta na tela, nao mexe (senao a
+       pagina pularia a cada tentativa enquanto o banco estiver fora) */
+    if(!document.querySelector("main > .alerta")) pedirRender();
     if(window.console && console.warn) console.warn("[radar] nao consegui enviar agora: " + e.message);
   });
 }
@@ -3211,10 +3278,15 @@ function linhaParaReg(x){
   if(x.o) reg.o = x.o;
   return reg;
 }
-function carregarNuvem(){
+function carregarNuvem(completa){
   if(!sbConfigurado()) return Promise.resolve(false);
-  /* paginado: o Supabase corta em 1000 linhas por pedido */
-  return sbTudo("atividade?select=vend,lead,s,m,d,o&order=vend.asc,lead.asc")
+  if(!STATE.vend) return Promise.resolve(false);
+  /* 13/10: leitura cheia so na primeira vez (ou a pedido); depois so o que
+     mudou desde ontem. O vendedor le so a propria fila (escopoLeitura).
+     Paginado: o Supabase corta em 1000 linhas por pedido. */
+  var cheia = !!completa || !LEITURA.cheiaFeita;
+  var caminho = "atividade?select=vend,lead,s,m,d,o&order=vend.asc,lead.asc" + escopoLeitura() + (cheia ? "" : "&d=gte."+ontemIso());
+  return sbTudo(caminho)
     .then(function(linhas){
       var mapa = {};
       /* comeca do que ja existe na maquina: o banco COMPLETA, nunca apaga.
@@ -3236,9 +3308,11 @@ function carregarNuvem(){
       aplicarDono();
       Object.keys(mapa).forEach(function(vid){ espelhoLocal(vid); });
       DIAG.leituraOk = true; DIAG.leituraErro = "";
-      DIAG.linhas = (linhas||[]).length; DIAG.lidoAs = horaAgora();
+      DIAG.linhas = (linhas||[]).length; DIAG.lidoAs = horaAgora() + (cheia ? " (leitura cheia)" : " (so o que mudou)");
+      if(cheia) DIAG.linhasTotal = (linhas||[]).length;
       STATE.sync = FILA.length ? "pendente" : "ok";
-      return true;
+      LEITURA.cheiaFeita = true;
+      return outrosNaMinhaFila(cheia).then(function(){ return true; });
     })
     .catch(function(e){
       STATE.sync = "pendente";
@@ -3246,6 +3320,43 @@ function carregarNuvem(){
       if(window.console && console.warn) console.warn("[radar] leitura falhou, usando copia local: " + e.message);
       return false;
     });
+}
+
+/* O vendedor nao baixa as linhas dos outros. O que ele precisa saber e se um
+   lead NAO TRABALHADO da fila dele ja foi marcado por outra pessoa (aplicarDono
+   devolve o lead a quem trabalhou, e o cartao avisa). Isso vem numa consulta
+   so dos ids da fila dele, em lotes de 40, e a resposta e quase sempre vazia.
+   Roda na leitura cheia e depois a cada 30 min. O gestor nao precisa: ele le
+   as linhas de todo mundo. */
+function outrosNaMinhaFila(forcar){
+  var v=STATE.vend;
+  if(!v || v.gestor || !sbConfigurado()) return Promise.resolve(false);
+  if(!forcar && Date.now()-LEITURA.outrosEm < OUTROS_MS) return Promise.resolve(false);
+  LEITURA.outrosEm = Date.now();
+  var ids = todosLeads().filter(function(l){
+    return l.vend===v.id && statusDe(v.id,l.id)==="novo" && /^[a-z0-9-]+$/.test(String(l.id||""));
+  }).map(function(l){ return l.id; });
+  var lotes=[], i;
+  for(i=0; i<ids.length; i+=40) lotes.push(ids.slice(i,i+40));
+  var achados=[];
+  function um(k){
+    if(k>=lotes.length) return Promise.resolve(achados);
+    return sbTudo("atividade?select=vend,lead,s,m,d&vend=neq."+encodeURIComponent(v.id)+"&lead=in.("+lotes[k].join(",")+")")
+      .then(function(linhas){ achados=achados.concat(linhas||[]); return um(k+1); });
+  }
+  return um(0).then(function(linhas){
+    var mudou=false;
+    (linhas||[]).forEach(function(x){
+      if(!x||!x.vend||!x.lead) return;
+      var m = STATE.atividade[x.vend] || (STATE.atividade[x.vend]={});
+      m[x.lead] = linhaParaReg(x); mudou=true;
+    });
+    if(mudou){ aplicarDono(); Object.keys(STATE.atividade).forEach(function(vid){ espelhoLocal(vid); }); }
+    return true;
+  }).catch(function(e){
+    if(window.console&&console.warn) console.warn("[radar] leads da fila trabalhados por outros: "+e.message);
+    return false;
+  });
 }
 
 function carregarLeadsNuvem(){
@@ -3386,10 +3497,12 @@ function escoarH(){
     FILA_H = FILA_H.filter(function(x){ return !ids[x.ev]; });
     gravarFilaH();
     ESCOANDO_H = false;
+    ENVIO_H_APOS = 0; ENVIO_H_FALHAS = 0;
     DIAG.histEscritaOk = true; DIAG.histEscritaErro = ""; DIAG.histEnviadoAs = horaAgora();
     if(FILA_H.length) escoarH();
   }).catch(function(e){
     ESCOANDO_H = false;
+    ENVIO_H_FALHAS++; ENVIO_H_APOS = Date.now() + esperaEnvio(ENVIO_H_FALHAS);
     DIAG.histEscritaOk = false; DIAG.histEscritaErro = e.message;
     if(window.console && console.warn) console.warn("[radar] historico: nao consegui registrar agora: " + e.message);
   });
@@ -3407,7 +3520,9 @@ function sbTudo(caminho, passo){
       .then(function(r){
         if(r.status === 416) return tudo;
         if(!r.ok) throw new Error(String(r.status));
-        return r.json().then(function(linhas){
+        return r.text().then(function(txt){
+          contarLeitura((txt||"").length);
+          var linhas = txt ? JSON.parse(txt) : [];
           linhas = linhas || [];
           tudo = tudo.concat(linhas);
           if(linhas.length < passo) return tudo;
@@ -3419,14 +3534,19 @@ function sbTudo(caminho, passo){
 }
 
 /* ---------- leitura do historico (so o gestor precisa) ---------- */
-var HIST = { linhas:null, ok:null, erro:"", lidoAs:"", carregando:false };
+var HIST = { linhas:null, ok:null, erro:"", lidoAs:"", carregando:false, maxId:0 };
 function carregarHistorico(){
   if(!sbConfigurado()){ HIST.ok=false; HIST.erro="sem banco configurado"; if(HIST.linhas===null) HIST.linhas=[]; return Promise.resolve(false); }
   if(HIST.carregando) return Promise.resolve(false);
   HIST.carregando = true;
-  return sbTudo("historico?select=vend,lead,s,m,d,ts&order=id.asc")
+  /* 13/10: inteiro so na primeira vez; depois so os toques novos (id > ultimo) */
+  var desde = (HIST.linhas && HIST.linhas.length && HIST.maxId) ? HIST.maxId : 0;
+  return sbTudo("historico?select=id,vend,lead,s,m,d,ts&order=id.asc" + (desde ? "&id=gt."+desde : ""))
     .then(function(linhas){
-      HIST.linhas = linhas || []; HIST.ok = true; HIST.erro = ""; HIST.lidoAs = horaAgora();
+      linhas = linhas || [];
+      HIST.linhas = desde ? (HIST.linhas||[]).concat(linhas) : linhas;
+      linhas.forEach(function(x){ var id=parseInt(x&&x.id,10); if(id>(HIST.maxId||0)) HIST.maxId=id; });
+      HIST.ok = true; HIST.erro = ""; HIST.lidoAs = horaAgora() + (desde ? " (+"+linhas.length+" toque(s) novo(s))" : " (leitura cheia)");
       HIST.carregando = false; return true;
     })
     .catch(function(e){
@@ -3711,7 +3831,7 @@ function viewHistorico(main){
     ". Cada clique de classificação vira um registro novo; nada é sobrescrito."+
     (HIST.lidoAs?" Lido às "+HIST.lidoAs+".":"")+(FILA_H.length?" <b>"+FILA_H.length+" toque(s) desta máquina ainda não subiram.</b>":"")}));
   pf.appendChild(el("div",{class:"acts",style:"margin-top:10px"},[
-    el("button",{class:"btn",onclick:function(){ HIST.linhas=null; escoarH(); sincronizar().then(function(){ render(); }); }},[document.createTextNode("Reler agora")])
+    el("button",{class:"btn",onclick:function(){ HIST.linhas=null; HIST.maxId=0; escoarH(); sincronizar().then(function(){ render(); }); }},[document.createTextNode("Reler agora")])
   ]));
   main.appendChild(pf);
 }
@@ -3739,33 +3859,58 @@ function restaurarVend(){
 restaurarVend();
 render();
 
-function sincronizar(){
-  var hist = (STATE.vend && STATE.vend.gestor && STATE.view==="historico") ? carregarHistorico() : Promise.resolve(false);
-  return Promise.all([carregarNuvem(), hist, carregarPrimeiros()]).then(function(r){
+/* 13/10: modo "tudo" forca a leitura cheia (entrada da pessoa, botao "Reler o
+   banco agora"). Sem modo, e a leitura periodica: so o que mudou. Quem decide
+   o ritmo e sincronizarSeNaHora(), com o intervalo de quem esta logado. */
+function sincronizar(modo){
+  if(!STATE.vend) return Promise.resolve(false);
+  var tudo = (modo==="tudo");
+  if(tudo) LEITURA.cheiaFeita = false;
+  LEITURA.ultimaEm = Date.now();
+  var hist = (STATE.vend.gestor && STATE.view==="historico") ? carregarHistorico() : Promise.resolve(false);
+  return Promise.all([carregarNuvem(tudo), hist, carregarPrimeiros()]).then(function(r){
     var ok = r[0];
-    if((ok || r[1]) && !digitando()) render(); else pintarSync();
+    if((ok || r[1]) && !digitando()) render();
+    else {
+      pintarSync();
+      /* a leitura falhou (banco fora, cota estourada): o aviso tem de aparecer
+         sem esperar um clique - mas so redesenha se ele ainda nao esta na tela */
+      if(!ok && DIAG.leituraOk===false && !digitando() && !document.querySelector("main > .alerta")) pedirRender();
+    }
     return ok;
   });
 }
+function sincronizarSeNaHora(){
+  if(!STATE.vend || digitando()) return;
+  if(typeof document !== "undefined" && document.hidden) return;
+  if(Date.now() - LEITURA.ultimaEm < intervaloSync()) return;
+  sincronizar();
+}
 carregarLeadsNuvem().then(function(trocou){
   if(trocou && !digitando()) render();
-  return sincronizar();
+  return sincronizar("tudo");
 });
 
 if(typeof window !== "undefined"){
-  window.addEventListener("online", function(){ escoar(); escoarH(); });
-  setInterval(function(){ if(FILA.length){ escoar(); pedirRender(); } if(FILA_H.length) escoarH(); }, 20000);
+  window.addEventListener("online", function(){ ENVIO_APOS=0; ENVIO_H_APOS=0; escoar(); escoarH(); });
+  setInterval(function(){
+    var agora=Date.now();
+    if(FILA.length && agora>=ENVIO_APOS) escoar();
+    if(FILA_H.length && agora>=ENVIO_H_APOS) escoarH();
+  }, 20000);
   /* se a pagina passar a virada do dia aberta, o contador de hoje vira junto */
   setInterval(function(){
     var h = dataLocal();
     if(h !== HOJE){ HOJE = h; pedirRender(); }
     recarregarSeVelha();
   }, 60000);
-  setInterval(function(){ if(!digitando()) sincronizar(); }, 30000);
+  /* 13/10: o relogio continua de 30 s, mas a leitura so acontece quando o
+     intervalo de quem esta logado venceu (5 min gestor, 10 min vendedor) */
+  setInterval(sincronizarSeNaHora, 30000);
   document.addEventListener("visibilitychange", function(){
     if(document.hidden) return;
     recarregarSeVelha();
-    sincronizar();
+    sincronizarSeNaHora();
   });
 }
 
