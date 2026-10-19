@@ -1318,7 +1318,7 @@ function proximoFup(reg){ return reg&&reg.s==="fup1"?2:1; }
 function textoDoFup(l,dono){
   var reg=regDe(dono,l.id)||{};
   var t=proximoFup(reg)===2?(semAnuncio(l)?TXT_FUP2_CNPJ:TXT_FUP2):txtFup1(nomeVend(dono),l);
-  return ehGestor(dono)?vozDoDanilo(t):t;
+  return ehDanilo(dono)?vozDoDanilo(t):t;
 }
 function seqLista(proprio){
   var v=STATE.vend, s=seqLer(), pulados=(s&&s.pulados)||[];
@@ -1355,7 +1355,7 @@ function seqPainel(proprio){
       el("div",{class:"acts"},[el("button",{class:"btn",onclick:seqSair},[document.createTextNode("Sair do modo sequência")])])
     ]);
   }
-  var dono=donoDoLead(l), souD=ehGestor(dono), reg=regDe(dono,l.id)||{};
+  var dono=donoDoLead(l), souD=ehDanilo(dono), reg=regDe(dono,l.id)||{};
   var nFup=proximoFup(reg), de=repassadoDe(dono,l.id);
   var msg=modo==="fup"?textoDoFup(l,dono):msgWhats(l,nomeVend(dono),souD), link=waLink(l.wa,msg);
   var agora=Date.now(), falta=Math.ceil((SEQ_INTERVALO*1000-(agora-(s.ultimo||0)))/1000);
@@ -1398,8 +1398,11 @@ function prospecta(p){ return !!p && (!p.gestor || !!p.prospecta); }
 function ativos(){
   return STATE.equipe.filter(function(p){return prospecta(p) && !p.inativo;});
 }
+/* "prospectou": o Danilo prospectou de 17/09 a 19/10 e parou (19/10). Sem fila e sem
+   lead novo, mas o que ele trabalhou continua contando no Gerencial e no Historico,
+   como o de quem saiu do time. */
 function todosVend(){
-  return STATE.equipe.filter(function(p){return prospecta(p);});
+  return STATE.equipe.filter(function(p){return prospecta(p) || !!p.prospectou;});
 }
 function exVend(){
   return STATE.equipe.filter(function(p){return !p.gestor && p.inativo;});
@@ -1420,10 +1423,10 @@ function nomeVend(id){
   var a=STATE.equipe.filter(function(p){return p.id===id})[0];
   return a?a.nome:id;
 }
-function ehGestor(id){
-  var a=STATE.equipe.filter(function(p){return p.id===id})[0];
-  return !!(a&&a.gestor);
-}
+/* A mensagem vai na primeira pessoa do Danilo ("me chamo Danilo", "meu
+   trabalho") so quando o dono do lead e ele. O Icaro (gestor desde 19/10)
+   fala como o time: se apresenta pelo nome e marca a reuniao com o Danilo. */
+function ehDanilo(id){ return id==="gestor"; }
 /* O lead aberto nao muda de lugar na lista quando e classificado. Antes ele
    pulava pro fim, a tela ficava mostrando outros leads "Nao contatado" no
    lugar dele e o vendedor achava que a marcacao nao tinha pegado (21/09). */
@@ -1514,7 +1517,7 @@ document.addEventListener("focusout",function(){
   setTimeout(function(){ if(RENDER_PEND&&!digitando()) render(); },60);
 });
 
-var VERSAO_RADAR="13/10/2026 - leitura do banco enxuta, para caber na cota do plano Free do Supabase: o vendedor le so a propria fila a cada 10 min, o gestor le tudo uma vez e depois so o que mudou a cada 5 min, historico so os toques novos; aviso claro quando o banco esta bloqueado (HTTP 402); reenvio com espera quando o banco recusa";
+var VERSAO_RADAR="19/10/2026 - Icaro entra como segundo gestor (mesmo PIN, sem fila); Expedito sai do time; Danilo para de prospectar (a fila dele e repartida pela rotina)";
 /* ---------- gate: quem e voce ---------- */
 function entrarComo(p){
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
@@ -1527,14 +1530,16 @@ function entrarComo(p){
 }
 
 /* A entrada do gestor pede PIN. Nao e cofre: e so pra um vendedor nao
-   abrir o painel do Danilo sem querer (ou de proposito). */
+   abrir o painel do gestor sem querer (ou de proposito). Desde 19/10 sao
+   dois gestores (Danilo e Icaro), com o mesmo PIN: STATE.pedindoPin guarda
+   qual deles foi clicado. */
 function cartaoPin(){
   var erro=el("div",{class:"pinerro",text:""});
   var inp=el("input",{type:"password",inputmode:"numeric",autocomplete:"off",
     class:"pinbox",placeholder:"PIN do gestor",
     onkeydown:function(e){ if(e.key==="Enter"){ e.preventDefault(); tentar(); } }});
   function tentar(){
-    var g=STATE.equipe.filter(function(x){return x.gestor})[0];
+    var g=(STATE.pedindoPin&&STATE.pedindoPin.gestor)?STATE.pedindoPin:STATE.equipe.filter(function(x){return x.gestor})[0];
     if(g && inp.value===PIN_GESTOR){ entrarComo(g); return; }
     erro.textContent="PIN errado. Tente de novo.";
     inp.value=""; inp.focus();
@@ -1543,7 +1548,7 @@ function cartaoPin(){
   return el("div",{class:"gate"},[
     el("div",{class:"gatecard"},[
       el("div",{class:"brand",style:"padding-left:0"},[el("span",{class:"dot"}),el("b",{text:"Radar Comercial"})]),
-      el("h1",{text:"Painel do gestor"}),
+      el("h1",{text:"Painel do gestor"+(STATE.pedindoPin&&STATE.pedindoPin.nome?" · "+STATE.pedindoPin.nome:"")}),
       el("p",{text:"Digite o PIN para abrir o ranking e o acompanhamento do time."}),
       inp, erro,
       el("div",{class:"pinbts"},[
@@ -1562,7 +1567,7 @@ function gate(){
   var lista=el("div",{class:"people"});
   STATE.equipe.filter(function(p){return !p.inativo;}).forEach(function(p){
     lista.appendChild(el("button",{class:"person",onclick:function(){
-      if(p.gestor){ STATE.pedindoPin=true; render(); return; }
+      if(p.gestor){ STATE.pedindoPin=p; render(); return; }
       entrarComo(p);
     }},[
       el("span",{class:"av",style:"background:"+corDe(p.id),text:iniciais(p.nome)}),
@@ -2209,7 +2214,7 @@ function linhaSite(meu){
   ]);
 }
 function corpo(l,dono,st){
-  var vn=nomeVend(dono), souDanilo=ehGestor(dono);
+  var vn=nomeVend(dono), souDanilo=ehDanilo(dono);
   var mA=msgWhats(l,vn,souDanilo);
   var obs=observacaoDe(l), setupPro=!obs;
   var wa=waLink(l.wa,mA), ig=igLink(l.ig);
@@ -2656,7 +2661,7 @@ function viewScripts(main){
   main.appendChild(el("div",{class:"panel"},[
     el("h2",{text:"Site do Danilo"}),
     el("p",{class:"hint",text:"É o link que vai nas mensagens. Copie daqui sempre que precisar mandar."}),
-    linhaSite(!!(STATE.vend&&STATE.vend.gestor))
+    linhaSite(!!(STATE.vend&&ehDanilo(STATE.vend.id)))
   ]));
 
   BIBLIOTECA.forEach(function(s,i){
