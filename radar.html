@@ -1173,19 +1173,15 @@ function contaNaCota(vid,leadId){
   if(!primeiroHoje(vid,leadId)) return false;
   return (regDe(vid,leadId)||{}).m!=="contato_errado";
 }
+/* 22/10: a data do primeiro contato tambem fica no proprio registro do lead
+   (campo p), que ja vem do banco junto com a fila - nao precisa de leitura
+   extra no historico (no Firebase cada documento lido conta na cota). */
 function carregarPrimeiros(){
-  if(!sbConfigurado()) return Promise.resolve(false);
-  /* 13/10: o vendedor le so os primeiros contatos DELE; os dos outros nao
-     mudam a cota dele. O gestor le de todo mundo (sao poucas linhas por dia). */
-  return sbTudo("historico?select=vend,lead,d&ev=like.p1:*&d=eq."+HOJE+escopoLeitura()+"&order=id.asc")
-    .then(function(linhas){
-      (linhas||[]).forEach(function(x){ if(x&&x.vend&&x.lead) PRIM[x.vend+"|"+x.lead]=String(x.d||HOJE).slice(0,10); });
-      return true;
-    })
-    .catch(function(e){
-      if(window.console&&console.warn) console.warn("[radar] primeiros contatos de hoje: "+e.message);
-      return false;
-    });
+  Object.keys(STATE.atividade||{}).forEach(function(vid){
+    var m=STATE.atividade[vid]||{}, k;
+    for(k in m){ if(m[k] && m[k].p) PRIM[vid+"|"+k]=String(m[k].p).slice(0,10); }
+  });
+  return Promise.resolve(false);
 }
 /* O dia de uma fila: quantos primeiros contatos ja foram feitos hoje, quais
    leads ainda cabem na cota (hoje) e quantos ficam guardados (espera). O
@@ -1472,7 +1468,7 @@ function salvarReg(leadId,patch,vid,semRender){
   /* primeira marcacao deste lead: e o primeiro contato, e conta na cota de hoje */
   var primeiro=!!(patch && patch.s && patch.s!=="novo" && (!atual.s||atual.s==="novo"));
   m[leadId]=Object.assign({},atual,patch);
-  if(primeiro) marcarPrimeiro(vid,leadId,m[leadId].d||HOJE);
+  if(primeiro){ m[leadId].p=m[leadId].d||HOJE; marcarPrimeiro(vid,leadId,m[leadId].p); }
   gravarLocal(vid);
   enfileirar(vid,leadId,m[leadId]);
   /* so a classificacao (status) vira toque no historico; anotacao nao */
@@ -1521,7 +1517,7 @@ document.addEventListener("focusout",function(){
   setTimeout(function(){ if(RENDER_PEND&&!digitando()) render(); },60);
 });
 
-var VERSAO_RADAR="19/10/2026 - Icaro entra como segundo gestor (mesmo PIN, sem fila); Expedito sai do time; Danilo para de prospectar (a fila dele e repartida pela rotina)";
+var VERSAO_RADAR="22/10/2026 - banco novo (Firebase): o Supabase saiu do ar; o que ficou guardado em cada aparelho sobe sozinho";
 /* ---------- gate: quem e voce ---------- */
 function entrarComo(p){
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
@@ -1597,7 +1593,7 @@ function gate(){
    localStorage desta origem. Antes ele copiava um JSON e mandava por
    WhatsApp para o Danilo colar no sistema. Agora e um clique: o pacote vai
    no #hash da URL para importar.html, no mesmo endereco do radar.html
-   (danilobarrocas83-png.github.io), que grava no Supabase, deixa a copia no
+   (danilobarrocas83-png.github.io), que grava no banco, deixa a copia no
    localStorage de la e responde por postMessage para esta aba limpar a fila.
    O hash nunca sai do navegador (nao vai para servidor nenhum). */
 var RADAR_NOVO_ORIGEM="https://danilobarrocas83-png.github.io";
@@ -1767,14 +1763,14 @@ function avisoSync(){
   var det=[], bloqueado=bancoBloqueado();
   if(FILA.length) det.push(FILA.length+" marcacao(oes) ainda nao subiram");
   if(bloqueado){
-    det.push("o banco respondeu HTTP 402: a cota mensal de trafego do Supabase estourou e o projeto fica bloqueado ate a cota voltar. Nao e a sua internet. Suas marcacoes ficam guardadas neste aparelho e sobem sozinhas quando o banco voltar - nao limpe os dados do navegador");
+    det.push("o banco respondeu que a cota gratis do dia acabou (Firebase). Ela volta sozinha de madrugada, por volta das 4h-5h. Nao e a sua internet. Suas marcacoes ficam guardadas neste aparelho e sobem sozinhas quando o banco voltar - nao limpe os dados do navegador");
   } else {
     if(DIAG.escritaErro) det.push("ao salvar: "+DIAG.escritaErro);
     if(DIAG.leituraErro) det.push("ao ler: "+DIAG.leituraErro);
   }
   return el("div",{class:"alerta"},[
     el("div",{style:"min-width:0"},[
-      el("b",{text:bloqueado ? "O banco esta bloqueado (cota mensal do Supabase estourada). O que voce marcar fica guardado aqui e sobe sozinho quando ele voltar."
+      el("b",{text:bloqueado ? "O banco atingiu a cota gratis de hoje. O que voce marcar fica guardado aqui e sobe sozinho quando ele voltar."
                              : "O que voce marcar nao esta chegando no painel do Danilo."}),
       el("div",{class:"det",text:det.join(" · ") || "sem resposta do banco"})
     ]),
@@ -1866,9 +1862,11 @@ function painelDiagnostico(main){
         DIAG.histEscritaOk===null?"":(DIAG.histEscritaOk?okc:ruim));
   linha("Toques na fila", String(FILA_H.length), FILA_H.length?ruim:okc);
   linha("Versao desta pagina", VERSAO_RADAR);
-  linha("Leituras do banco hoje (esta maquina)", LEITURA.pedidosHoje+" pedido(s) · "+kbTexto(LEITURA.bytesHoje), LEITURA.bytesHoje>50*1048576?ruim:okc);
-  linha("Ritmo de leitura", (STATE.vend&&STATE.vend.gestor)?"gestor: tudo ao abrir a pagina, depois so o que mudou, a cada 5 min":"vendedor: so a propria fila, a cada 10 min");
-  linha("Cota do Supabase (plano Free)", "5 GB de trafego por mes para o time todo; estourou em 10/2026 com a leitura antiga (tabela inteira a cada 30 s)");
+  linha("Login do banco (automatico)", AUTH.token?("ok desde "+AUTH.desde):(AUTH.erro?("FALHOU - "+AUTH.erro):"ainda nao entrou"), AUTH.token?okc:(AUTH.erro?ruim:""));
+  linha("Documentos lidos hoje (esta maquina)", LEITURA.docsHoje+" · "+LEITURA.pedidosHoje+" pedido(s) · "+kbTexto(LEITURA.bytesHoje), LEITURA.docsHoje>8000?ruim:okc);
+  linha("Subiram deste aparelho para o banco novo", String(DIAG.subiramDoAparelho||0)+" marcacao(oes) nesta sessao");
+  linha("Ritmo de leitura", (STATE.vend&&STATE.vend.gestor)?"gestor: tudo na primeira vez neste aparelho, depois so o que mudou, a cada 5 min":"vendedor: so a propria fila, so o que mudou, a cada 10 min");
+  linha("Banco (Firebase, plano gratis)", "50 mil leituras e 20 mil gravacoes por dia para o time todo; se acabar, volta sozinho de madrugada. Projeto "+FB.projeto+" (desde 22/10/2026; o Supabase saiu do ar em 15/10)");
 
   var porV=el("div",{style:"margin-top:12px"});
   porV.appendChild(el("div",{class:"eyebrow",text:"Registros por vendedor",style:"margin-bottom:6px"}));
@@ -1885,10 +1883,10 @@ function painelDiagnostico(main){
   p.appendChild(porV);
 
   p.appendChild(el("div",{style:"display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"},[
-    el("button",{class:"btn-alerta",onclick:function(){ sincronizar("tudo").then(function(){ render(); }); }},
+    el("button",{class:"btn-alerta",onclick:function(){ sincronizar("cheia").then(function(){ render(); }); }},
       [document.createTextNode("Reler o banco agora (leitura cheia)")]),
     el("button",{class:"btn-alerta",onclick:function(){ reenviarTudo(); }},
-      [document.createTextNode("Reenviar tudo que esta nesta maquina")])
+      [document.createTextNode("Reenviar as minhas marcacoes desta maquina")])
   ]));
   main.appendChild(p);
 
@@ -3049,20 +3047,31 @@ function redistribuir(){
 }
 
 /* ============================================================
-   VERSAO NUVEM - banco central no Supabase.
-   Os leads vem embutidos no arquivo (ou do banco, se houver).
-   O que o vendedor marca vai para o banco compartilhado, entao o
-   Danilo ve o ranking de todo mundo em tempo real.
-   Se a internet cair, nada se perde: fica numa fila local e sobe
-   sozinho quando a conexao voltar.
+   VERSAO NUVEM - banco central no Firebase (Cloud Firestore).
+   22/10/2026: o Supabase (plano Free) bloqueou o projeto por cota de
+   trafego em 13/10 e saiu do ar por volta de 15/10. O banco agora e o
+   projeto Firebase "radar-comercial" (conta Google do Danilo, plano Spark,
+   gratis, servidor em Sao Paulo):
+   - a cota e DIARIA (50 mil leituras e 20 mil gravacoes por dia para o time
+     todo): se estourar, volta sozinha no dia seguinte, em vez de bloquear o
+     mes inteiro como o Supabase;
+   - cada aparelho entra sozinho com um login anonimo (o vendedor nao ve
+     nada); as regras do banco so aceitam dados no formato do Radar e
+     ninguem apaga nada;
+   - colecao "atividade": um documento por vendedor+lead (o estado atual);
+     colecao "historico": um documento por clique (so acrescenta);
+   - o campo t e a hora do servidor. Cada leitura pede so o que mudou desde
+     a ultima (a marca fica guardada no aparelho); leitura cheia so na
+     primeira vez em cada aparelho ou no botao "Reler o banco agora".
+   Os leads continuam embutidos no arquivo. Se a internet cair, nada se
+   perde: fica numa fila local e sobe sozinho quando a conexao voltar.
    ============================================================ */
-var SB = {
-  url: "https://keaildawjiksgxpmyizv.supabase.co",
-  /* as duas chaves publicas do projeto. A primeira e a nova; se o
-     projeto ainda responder so a antiga, o codigo troca sozinho. */
-  keys: ["sb_publishable_T_OQGszwVhLhaSmDVbNZLw_4w67ARSH",
-         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlYWlsZGF3amlrc2d4cG15aXp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MzIyNjAsImV4cCI6MjEwNDEwODI2MH0.VS-uYRjpZbPoLKgH4IJ9yrnDM7r45io_muCIXfAYt3U"],
-  i: 0
+var FB = {
+  projeto: "radar-comercial-b7d18",
+  /* chave publica do app web (Firebase > Configuracoes do projeto > Seus
+     apps). Nao e segredo: so identifica o projeto. Quem protege os dados
+     sao as regras do banco. */
+  chave: "AIzaSyDo7V5GmmFUjK6wy6iArwvUQXPOxtF50-8"
 };
 var PIN_GESTOR = "7010";
 /* Diagnostico de sincronizacao: sem isto, uma falha de banco fica muda e o
@@ -3071,96 +3080,213 @@ var DIAG = { leituraOk:null, leituraErro:"", linhas:0, lidoAs:"",
              escritaOk:null, escritaErro:"", enviadoAs:"",
              leadsFonte:"embutida", leadsErro:"", leadsNuvemData:"",
              leadsEmbutidaData:"", leadsNuvemLinhas:0, leadsSoDaNuvem:0,
-             histEscritaOk:null, histEscritaErro:"", histEnviadoAs:"" };
+             histEscritaOk:null, histEscritaErro:"", histEnviadoAs:"",
+             subiramDoAparelho:0 };
 function horaAgora(){
   var d=new Date();
   return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
 }
 
-/* ---------- leitura enxuta do banco (13/10/2026) ----------
-   O projeto do Supabase foi bloqueado por estourar a cota mensal de trafego
-   do plano Free (HTTP 402, exceed_egress_quota). A causa era esta pagina: a
-   cada 30 s, em toda aba aberta, ela baixava a tabela "atividade" INTEIRA
-   (milhares de linhas) e, na aba Historico, a tabela "historico" inteira.
-   Com o time todo de aba aberta, isso passava de 1 GB por dia. Agora:
-   - o vendedor le so as linhas DELE (vend=eq.X). Das outras pessoas ele so
-     precisa saber se um lead da fila dele ja foi trabalhado por alguem, e
-     isso vem numa consulta so dos ids da fila dele (resposta quase vazia);
-   - o gestor le tudo UMA vez por carga da pagina; depois so o que mudou
-     (d >= ontem - a data d e sobrescrita a cada clique, entao "mudou" e
-     "d recente"). A copia completa fica no espelho local (localStorage);
+/* ---------- ritmo e custo das leituras ----------
+   No Firebase cada documento lido conta na cota diaria. Por isso:
+   - o vendedor le so as linhas DELE; das outras pessoas ele so precisa
+     saber se um lead da fila dele ja foi trabalhado por alguem (consulta so
+     dos ids da fila dele, a cada 30 min);
+   - o gestor le tudo uma vez por aparelho; depois so o que mudou;
    - o intervalo e de 10 min (vendedor) e 5 min (gestor), so com a aba
-     visivel; trocar de aba nao dispara leitura antes da hora;
-   - o historico e lido inteiro uma vez e depois so id > ultimo;
-   - cada byte lido e contado e aparece no painel Sincronizacao do Gerencial.
-   Conta de padeiro: 11 pessoas de aba aberta 10 h por dia ficam abaixo de
-   30 MB por dia (menos de 1 GB por mes), contra 5 GB de cota. */
-var LEITURA = { cheiaFeita:false, ultimaEm:0, outrosEm:0, dia:"", pedidosHoje:0, bytesHoje:0 };
+     visivel;
+   - cada documento lido e contado e aparece no painel Sincronizacao. */
+var LEITURA = { ultimaEm:0, outrosEm:0, dia:"", pedidosHoje:0, bytesHoje:0, docsHoje:0 };
 var SYNC_MS_VEND = 10*60000, SYNC_MS_GESTOR = 5*60000, OUTROS_MS = 30*60000;
 function intervaloSync(){ return (STATE.vend && STATE.vend.gestor) ? SYNC_MS_GESTOR : SYNC_MS_VEND; }
 function lerContadorLeitura(){
   try{
     var x = JSON.parse(localStorage.getItem("radar_leitura")||"null");
-    if(x && x.d===HOJE){ LEITURA.dia=x.d; LEITURA.pedidosHoje=x.n||0; LEITURA.bytesHoje=x.b||0; }
+    if(x && x.d===HOJE){ LEITURA.dia=x.d; LEITURA.pedidosHoje=x.n||0; LEITURA.bytesHoje=x.b||0; LEITURA.docsHoje=x.k||0; }
   }catch(e){}
 }
-function contarLeitura(bytes){
-  if(LEITURA.dia!==HOJE){ LEITURA.dia=HOJE; LEITURA.pedidosHoje=0; LEITURA.bytesHoje=0; }
-  LEITURA.pedidosHoje++; LEITURA.bytesHoje += (bytes||0);
-  try{ localStorage.setItem("radar_leitura", JSON.stringify({d:HOJE,n:LEITURA.pedidosHoje,b:LEITURA.bytesHoje})); }catch(e){}
+function contarLeitura(bytes, docs){
+  if(LEITURA.dia!==HOJE){ LEITURA.dia=HOJE; LEITURA.pedidosHoje=0; LEITURA.bytesHoje=0; LEITURA.docsHoje=0; }
+  if(bytes) LEITURA.pedidosHoje++;
+  LEITURA.bytesHoje += (bytes||0); LEITURA.docsHoje += (docs||0);
+  try{ localStorage.setItem("radar_leitura", JSON.stringify({d:HOJE,n:LEITURA.pedidosHoje,b:LEITURA.bytesHoje,k:LEITURA.docsHoje})); }catch(e){}
 }
 function kbTexto(b){ return b>=1048576 ? (b/1048576).toFixed(1)+" MB" : Math.round((b||0)/1024)+" KB"; }
-function ontemIso(){ var d=new Date(HOJE+"T12:00:00"); d.setDate(d.getDate()-1); return dataLocal(d); }
-/* o vendedor so le as linhas dele; o gestor le de todo mundo */
-function escopoLeitura(){
-  var v=STATE.vend; if(!v || v.gestor) return "";
-  return "&vend=eq."+encodeURIComponent(v.id);
-}
-/* HTTP 402 = o Supabase bloqueou o projeto por cota estourada */
+/* HTTP 429 / RESOURCE_EXHAUSTED = a cota diaria gratis do Firebase acabou
+   (volta sozinha no dia seguinte, por volta das 4h-5h de Fortaleza) */
 function bancoBloqueado(){
-  var re=/(^|[^0-9])402([^0-9]|$)/;
+  var re=/(^|[^0-9])429([^0-9]|$)|RESOURCE_EXHAUSTED/;
   return re.test(String(DIAG.escritaErro||"")) || re.test(String(DIAG.leituraErro||"")) || re.test(String(DIAG.histEscritaErro||""));
 }
 lerContadorLeitura();
-try{ var _ki = parseInt(localStorage.getItem("radar_chave"),10);
-     if(_ki >= 0 && _ki < SB.keys.length) SB.i = _ki; }catch(e){}
-function sbChave(){ return SB.keys[SB.i]; }
-function sbTrocarChave(){
-  if(SB.i < SB.keys.length-1){
-    SB.i++;
-    try{ localStorage.setItem("radar_chave", String(SB.i)); }catch(e){}
-    return true;
-  }
-  return false;
-}
 
 STATE.equipe = EQUIPE_FIXA.slice();
 STATE.sync = "ok";
 STATE.pend = 0;
 
-function sbConfigurado(){
-  return SB.url.indexOf("http") === 0 && !!sbChave();
+function bancoConfigurado(){ return !!FB.projeto && /^AIza/.test(String(FB.chave||"")); }
+
+/* ---------- login anonimo automatico ----------
+   O aparelho guarda so o "refresh token" (radar_fb_auth). A cada hora o
+   acesso e renovado sozinho; se o login for perdido, entra de novo. */
+var AUTH = { token:"", exp:0, pedindo:null, erro:"", desde:"" };
+function lerAuth(){ try{ return JSON.parse(localStorage.getItem("radar_fb_auth")||"null"); }catch(e){ return null; } }
+function guardarAuth(tok, refresh, expiraEmS){
+  AUTH.token = tok; AUTH.exp = Date.now() + (parseInt(expiraEmS,10)||3600)*1000;
+  AUTH.erro = ""; AUTH.desde = horaAgora();
+  try{ localStorage.setItem("radar_fb_auth", JSON.stringify({r:refresh})); }catch(e){}
+  return tok;
 }
-function sbUrl(caminho){ return SB.url.replace(/\/+$/,"") + "/rest/v1/" + caminho; }
-function sbCab(extra){
-  var h = { "apikey": sbChave(), "Authorization": "Bearer " + sbChave(),
-            "Content-Type": "application/json" };
-  if(extra) for(var k in extra) h[k] = extra[k];
-  return h;
-}
-/* Uma chave recusada nao pode derrubar o time: tenta a outra uma vez. */
-function sbPedir(caminho, opts){
-  opts = opts || {};
-  function tentativa(){
-    var o = { method: opts.method || "GET", headers: sbCab(opts.headers) };
-    if(opts.body) o.body = opts.body;
-    return fetch(sbUrl(caminho), o);
-  }
-  return tentativa().then(function(r){
-    if((r.status === 401 || r.status === 403) && sbTrocarChave()) return tentativa();
-    return r;
+function jsonOuErro(r, onde){
+  return r.text().then(function(txt){
+    var j=null; try{ j = txt ? JSON.parse(txt) : null; }catch(e){}
+    if(!r.ok){
+      var e0 = Array.isArray(j) ? j[0] : j;
+      var msg = (e0 && e0.error && (e0.error.status || e0.error.message)) || String(txt||"").slice(0,160);
+      throw new Error(r.status + " " + (onde ? onde+": " : "") + msg);
+    }
+    return j;
   });
 }
+function entrarAnonimo(){
+  return fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+encodeURIComponent(FB.chave), {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({returnSecureToken:true})
+  }).then(function(r){ return jsonOuErro(r, "login"); })
+    .then(function(j){ return guardarAuth(j.idToken, j.refreshToken, j.expiresIn); });
+}
+function renovarLogin(refresh){
+  return fetch("https://securetoken.googleapis.com/v1/token?key="+encodeURIComponent(FB.chave), {
+    method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:"grant_type=refresh_token&refresh_token="+encodeURIComponent(refresh)
+  }).then(function(r){ return jsonOuErro(r, "login"); })
+    .then(function(j){ return guardarAuth(j.id_token, j.refresh_token, j.expires_in); });
+}
+function fbToken(forcar){
+  if(!forcar && AUTH.token && Date.now() < AUTH.exp - 120000) return Promise.resolve(AUTH.token);
+  if(AUTH.pedindo) return AUTH.pedindo;
+  var salvo = lerAuth();
+  var p = (salvo && salvo.r)
+    ? renovarLogin(salvo.r).catch(function(e){
+        /* sem internet nao adianta criar outro login; login recusado, sim */
+        if(/^(400|401|403) /.test(String(e.message||""))) return entrarAnonimo();
+        throw e;
+      })
+    : entrarAnonimo();
+  AUTH.pedindo = p.then(function(t){ AUTH.pedindo=null; return t; },
+                        function(e){ AUTH.pedindo=null; AUTH.erro=e.message; throw e; });
+  return AUTH.pedindo;
+}
+
+/* ---------- Firestore pela API REST ---------- */
+var FS_DOCS = "projects/"+FB.projeto+"/databases/(default)/documents";
+function fsPost(sufixo, corpo){
+  function tentar(forcar){
+    return fbToken(forcar).then(function(tok){
+      return fetch("https://firestore.googleapis.com/v1/"+FS_DOCS+sufixo, {
+        method:"POST", headers:{"Content-Type":"application/json", "Authorization":"Bearer "+tok},
+        body:JSON.stringify(corpo)
+      });
+    });
+  }
+  return tentar(false).then(function(r){
+    if(r.status===401) return tentar(true);   /* acesso vencido: renova uma vez */
+    return r;
+  }).then(function(r){
+    return r.text().then(function(txt){
+      contarLeitura((txt||"").length, 0);
+      var j=null; try{ j = txt ? JSON.parse(txt) : null; }catch(e){}
+      if(!r.ok){
+        var e0 = Array.isArray(j) ? j[0] : j;
+        var msg = (e0 && e0.error && (e0.error.status || e0.error.message)) || String(txt||"").slice(0,160);
+        throw new Error(r.status + " " + msg);
+      }
+      return j;
+    });
+  });
+}
+function fsValor(v){
+  if(v===null || v===undefined) return {nullValue:null};
+  if(typeof v==="boolean") return {booleanValue:v};
+  return {stringValue:String(v)};
+}
+function fsCampos(o){ var f={}, k; for(k in o) if(o[k]!==undefined) f[k]=fsValor(o[k]); return f; }
+function fsDeCampos(f){
+  var o={}, k, v;
+  for(k in (f||{})){
+    v=f[k]||{};
+    if("stringValue" in v) o[k]=v.stringValue;
+    else if("timestampValue" in v) o[k]=v.timestampValue;
+    else if("booleanValue" in v) o[k]=v.booleanValue;
+    else if("integerValue" in v) o[k]=+v.integerValue;
+    else if("doubleValue" in v) o[k]=v.doubleValue;
+    else o[k]=null;
+  }
+  return o;
+}
+/* id de documento: os ids de lead ja sao slugs; o resto vira ~hex (sem "/") */
+function fsId(s){ return String(s).replace(/[^A-Za-z0-9_.:-]/g, function(c){ return "~"+c.charCodeAt(0).toString(16); }); }
+function idAtividade(vend, lead){ return fsId(vend)+"__"+fsId(lead); }
+
+/* Grava ate 50 documentos de uma vez; t = hora do servidor. Usa o commit
+   (o batchWrite do Firestore nao aceita login de usuario). O commit e tudo ou
+   nada: se as regras recusarem (403), regrava um por um para separar so o
+   recusado. Devolve os que o banco recusou (o resto ja esta salvo). */
+function fsGravar(colecao, itens, idDe, camposDe){
+  function escrita(x){
+    return { update:{ name: FS_DOCS+"/"+colecao+"/"+idDe(x), fields: fsCampos(camposDe(x)) },
+             updateTransforms:[{ fieldPath:"t", setToServerValue:"REQUEST_TIME" }] };
+  }
+  function recusado(e){ return /^403 /.test(String(e && e.message)); }
+  return fsPost(":commit", { writes: itens.map(escrita) }).then(function(){ return []; }, function(e){
+    if(!recusado(e)) throw e;
+    var falhas = [];
+    function um(i){
+      if(i >= itens.length) return Promise.resolve(falhas);
+      return fsPost(":commit", { writes:[escrita(itens[i])] }).then(function(){ return um(i+1); }, function(e2){
+        if(!recusado(e2)) throw e2;
+        falhas.push({ item:itens[i], erro:"recusado pelas regras do banco" });
+        return um(i+1);
+      });
+    }
+    return um(0);
+  });
+}
+/* Consulta paginada (2000 por pedido). Cada documento devolvido conta uma
+   leitura na cota diaria; consulta sem resultado conta uma. */
+function fsConsulta(colecao, filtros, ordem){
+  var PASSO = 2000, tudo = [];
+  ordem = ordem || [];
+  var orderBy = ordem.map(function(c){ return { field:{fieldPath:c}, direction:"ASCENDING" }; })
+                     .concat([{ field:{fieldPath:"__name__"}, direction:"ASCENDING" }]);
+  var where = !filtros.length ? null : (filtros.length===1 ? filtros[0] : { compositeFilter:{ op:"AND", filters:filtros } });
+  function pagina(cursor){
+    var q = { from:[{collectionId:colecao}], orderBy:orderBy, limit:PASSO };
+    if(where) q.where = where;
+    if(cursor) q.startAt = { values:cursor, before:false };
+    return fsPost(":runQuery", { structuredQuery:q }).then(function(arr){
+      var docs = (arr||[]).filter(function(r){ return r && r.document; }).map(function(r){ return r.document; });
+      contarLeitura(0, Math.max(1, docs.length));
+      docs.forEach(function(d){ tudo.push(fsDeCampos(d.fields)); });
+      if(docs.length < PASSO) return tudo;
+      var ult = docs[docs.length-1];
+      return pagina(ordem.map(function(c){ return ult.fields[c] || {nullValue:null}; }).concat([{ referenceValue: ult.name }]));
+    });
+  }
+  return pagina(null);
+}
+function fIgual(campo, valor){ return { fieldFilter:{ field:{fieldPath:campo}, op:"EQUAL", value:fsValor(valor) } }; }
+function fDepois(campo, iso){ return { fieldFilter:{ field:{fieldPath:campo}, op:"GREATER_THAN", value:{timestampValue:iso} } }; }
+function fEm(campo, lista){ return { fieldFilter:{ field:{fieldPath:campo}, op:"IN", value:{arrayValue:{values:lista.map(fsValor)}} } }; }
+
+/* ---------- marca da ultima leitura (por escopo) ----------
+   O vendedor le so a propria fila; o gestor le tudo. A marca e o maior t
+   (hora do servidor) ja lido neste aparelho. A proxima leitura pede o que
+   tem t depois dela, com 5 min de folga (o que vier repetido so confirma). */
+function escopoLeitura(){ var v=STATE.vend; return (!v || v.gestor) ? "todos" : v.id; }
+function lerMarcas(){ try{ return JSON.parse(localStorage.getItem("radar_fs_marca")||"{}") || {}; }catch(e){ return {}; } }
+function lerMarca(esc){ return lerMarcas()[esc] || ""; }
+function gravarMarca(esc, iso){ var x=lerMarcas(); x[esc]=iso; try{ localStorage.setItem("radar_fs_marca", JSON.stringify(x)); }catch(e){} }
+function menosMinutos(iso, min){ var t=Date.parse(iso); return isNaN(t) ? iso : new Date(t-min*60000).toISOString(); }
 
 /* ---------- espelho local (cache e seguranca contra queda) ---------- */
 function espelhoLocal(vid){
@@ -3186,32 +3312,35 @@ function gravarFila(){
   try{ localStorage.setItem("radar_fila", JSON.stringify(FILA)); }catch(e){}
   STATE.pend = FILA.length;
 }
-function enfileirar(vid, leadId, reg){
+/* poe (ou troca) o registro na fila de envio, sem disparar o envio */
+function porNaFila(vid, leadId, reg){
   if(!FILA.length) FILA_DESDE = Date.now();
   FILA = FILA.filter(function(x){ return !(x.vend===vid && x.lead===leadId); });
   FILA.push({
     vend: vid, lead: leadId,
     s: reg.s || null, m: reg.m || null,
-    d: reg.d || null, o: reg.o || null
+    d: reg.d || null, o: reg.o || null, p: reg.p || null
   });
+}
+function enfileirar(vid, leadId, reg){
+  porNaFila(vid, leadId, reg);
   gravarFila();
   escoar();
 }
 
-/* Reempurra para o banco tudo que existe na maquina. Serve quando as
-   marcacoes ficaram presas aqui e nunca chegaram no painel do gestor. */
+/* Reempurra para o banco as marcacoes de quem esta entrado nesta maquina.
+   Serve quando elas ficaram presas aqui e nunca chegaram no painel do
+   gestor. 22/10: so as da propria pessoa - a copia que o gestor tem das
+   filas dos outros pode ser velha e nao pode sobrescrever o banco (o que
+   falta no banco sobe sozinho na leitura cheia, ver migrarParaBanco). */
 function reenviarTudo(){
   var v = STATE.vend; if(!v) return 0;
-  var alvos = v.gestor ? Object.keys(STATE.atividade||{}) : [v.id];
+  var m = STATE.atividade[v.id] || {};
   var n = 0;
-  alvos.forEach(function(vid){
-    var m = STATE.atividade[vid] || {};
-    Object.keys(m).forEach(function(leadId){
-      var r = m[leadId]; if(!r || !r.s) return;
-      FILA = FILA.filter(function(x){ return !(x.vend===vid && x.lead===leadId); });
-      FILA.push({ vend:vid, lead:leadId, s:r.s||null, m:r.m||null, d:r.d||null, o:r.o||null });
-      n++;
-    });
+  Object.keys(m).forEach(function(leadId){
+    var r = m[leadId]; if(!r || !r.s) return;
+    porNaFila(v.id, leadId, r);
+    n++;
   });
   gravarFila();
   escoar();
@@ -3220,30 +3349,37 @@ function reenviarTudo(){
 }
 
 var ESCOANDO = false;
-/* 13/10: quando o banco recusa (por exemplo HTTP 402, cota estourada), nao
-   adianta insistir a cada 20 s: espera 2 min, depois 5. Uma marcacao nova,
-   a internet voltando ou o botao "Reenviar agora" tentam na hora. */
+/* 13/10: quando o banco recusa (cota estourada, banco fora), nao adianta
+   insistir a cada 20 s: espera 2 min, depois 5. Uma marcacao nova, a
+   internet voltando ou o botao "Reenviar agora" tentam na hora. */
 var ENVIO_APOS = 0, ENVIO_FALHAS = 0, ENVIO_H_APOS = 0, ENVIO_H_FALHAS = 0;
 function esperaEnvio(falhas){ return falhas <= 1 ? 120000 : 300000; }
+function camposAtividade(x){
+  return { vend:x.vend, lead:x.lead, s:x.s||null, m:x.m||null, d:x.d||null,
+           o:(x.o ? String(x.o).slice(0,20000) : null), p:x.p||null };
+}
 function escoar(){
   if(ESCOANDO || !FILA.length) return;
-  if(!sbConfigurado()){ STATE.sync = "offline"; pintarSync(); return; }
+  if(!bancoConfigurado()){ STATE.sync = "offline"; pintarSync(); return; }
   if(typeof navigator !== "undefined" && navigator.onLine === false){
     STATE.sync = "pendente"; pintarSync(); return;
   }
   ESCOANDO = true;
   var lote = FILA.slice(0, 50);
   STATE.sync = "enviando"; pintarSync();
-  sbPedir("atividade", {
-    method: "POST",
-    headers: { "Prefer": "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify(lote)
-  }).then(function(r){
-    if(!r.ok) return r.text().then(function(t){ throw new Error(r.status + " " + t); });
+  fsGravar("atividade", lote, function(x){ return idAtividade(x.vend, x.lead); }, camposAtividade)
+  .then(function(falhas){
+    var recusados = {};
+    falhas.forEach(function(f){ recusados[f.item.vend+" "+f.item.lead] = 1; });
     var chaves = {};
-    lote.forEach(function(x){ chaves[x.vend+" "+x.lead] = 1; });
-    FILA = FILA.filter(function(x){ return !chaves[x.vend+" "+x.lead]; });
+    lote.forEach(function(x){ if(!recusados[x.vend+" "+x.lead]) chaves[x.vend+" "+x.lead] = 1; });
+    /* o que o banco recusou vai para o fim da fila (nao trava quem vem atras) */
+    var resto = FILA.filter(function(x){ return !chaves[x.vend+" "+x.lead] && !recusados[x.vend+" "+x.lead]; });
+    FILA = resto.concat(lote.filter(function(x){ return recusados[x.vend+" "+x.lead]; }));
     gravarFila();
+    if(falhas.length){
+      throw new Error(falhas.length + " marcacao(oes) recusada(s): " + falhas[0].erro);
+    }
     ESCOANDO = false;
     ENVIO_APOS = 0; ENVIO_FALHAS = 0;
     DIAG.escritaOk = true; DIAG.escritaErro = ""; DIAG.enviadoAs = horaAgora();
@@ -3285,42 +3421,70 @@ function linhaParaReg(x){
   if(x.m) reg.m = x.m;
   if(x.d) reg.d = String(x.d).slice(0,10);
   if(x.o) reg.o = x.o;
+  if(x.p) reg.p = String(x.p).slice(0,10);
   return reg;
 }
-function carregarNuvem(completa){
-  if(!sbConfigurado()) return Promise.resolve(false);
-  if(!STATE.vend) return Promise.resolve(false);
-  /* 13/10: leitura cheia so na primeira vez (ou a pedido); depois so o que
-     mudou desde ontem. O vendedor le so a propria fila (escopoLeitura).
-     Paginado: o Supabase corta em 1000 linhas por pedido. */
-  var cheia = !!completa || !LEITURA.cheiaFeita;
-  var caminho = "atividade?select=vend,lead,s,m,d,o&order=vend.asc,lead.asc" + escopoLeitura() + (cheia ? "" : "&d=gte."+ontemIso());
-  return sbTudo(caminho)
+function regDiferente(a, b){
+  return (a.s||null)!==(b.s||null) || (a.m||null)!==(b.m||null) || (a.d||null)!==(b.d||null) ||
+         (a.o||null)!==(b.o||null) || (a.p||null)!==(b.p||null);
+}
+/* modo "cheia" = botao "Reler o banco agora". Sem modo: leitura cheia so se
+   este aparelho ainda nao leu este escopo (primeira vez); depois, so o que
+   mudou desde a ultima leitura. */
+function carregarNuvem(modo){
+  if(!bancoConfigurado()) return Promise.resolve(false);
+  var v = STATE.vend;
+  if(!v) return Promise.resolve(false);
+  var esc = escopoLeitura(), marca = lerMarca(esc);
+  var cheia = modo==="cheia" || !marca;
+  var filtros = [];
+  if(!v.gestor) filtros.push(fIgual("vend", v.id));
+  if(!cheia) filtros.push(fDepois("t", menosMinutos(marca, 5)));
+  return fsConsulta("atividade", filtros, cheia ? [] : ["t"])
     .then(function(linhas){
-      var mapa = {};
+      var mapa = {}, local = {}, noBanco = {}, subir = [], maxT = Date.parse(marca) || 0;
       /* comeca do que ja existe na maquina: o banco COMPLETA, nunca apaga.
          Sem isto, um registro que nunca subiu some da tela na primeira
          leitura da nuvem e o vendedor perde o trabalho do dia. */
       Object.keys(STATE.atividade||{}).forEach(function(vid){
         mapa[vid] = Object.assign({}, STATE.atividade[vid]);
+        local[vid] = Object.assign({}, STATE.atividade[vid]);
       });
       (linhas||[]).forEach(function(x){
+        if(!x || !x.vend || !x.lead) return;
+        var tt = Date.parse(x.t||""); if(tt > maxT) maxT = tt;
+        noBanco[x.vend+"|"+x.lead] = x;
         var m = mapa[x.vend] || (mapa[x.vend] = {});
+        var loc = m[x.lead];
+        /* a marcacao daqui e de data mais nova que a do banco: fica, e sobe
+           de novo (so a da propria pessoa; o gestor sobe as de todos) */
+        if(loc && loc.s && String(loc.d||"") > String(x.d||"")){
+          if(x.vend===v.id || v.gestor) subir.push([x.vend, x.lead]);
+          return;
+        }
         m[x.lead] = linhaParaReg(x);
       });
+      if(cheia) migrarParaBanco(mapa, local, noBanco, subir);
       /* o que ainda esta na fila e mais novo que o banco: preserva */
       FILA.forEach(function(x){
         var m = mapa[x.vend] || (mapa[x.vend] = {});
         m[x.lead] = linhaParaReg(x);
       });
       STATE.atividade = mapa;
+      if(subir.length){
+        subir.forEach(function(k){ var r = (mapa[k[0]]||{})[k[1]]; if(r && r.s) porNaFila(k[0], k[1], r); });
+        gravarFila();
+        DIAG.subiramDoAparelho += subir.length;
+      }
+      carregarPrimeiros();
       aplicarDono();
       Object.keys(mapa).forEach(function(vid){ espelhoLocal(vid); });
+      if(maxT) gravarMarca(esc, new Date(maxT).toISOString());
       DIAG.leituraOk = true; DIAG.leituraErro = "";
       DIAG.linhas = (linhas||[]).length; DIAG.lidoAs = horaAgora() + (cheia ? " (leitura cheia)" : " (so o que mudou)");
       if(cheia) DIAG.linhasTotal = (linhas||[]).length;
       STATE.sync = FILA.length ? "pendente" : "ok";
-      LEITURA.cheiaFeita = true;
+      if(subir.length) escoar();
       return outrosNaMinhaFila(cheia).then(function(){ return true; });
     })
     .catch(function(e){
@@ -3331,27 +3495,59 @@ function carregarNuvem(completa){
     });
 }
 
+/* 22/10/2026 - banco novo vazio. Tudo que cada aparelho guardou (inclusive o
+   que ficou preso na fila desde que o Supabase caiu) sobe na primeira leitura
+   cheia deste aparelho. Regras, para uma copia velha nunca apagar uma nova:
+   - a marcacao da propria pessoa sobe se o banco nao tem, ou se e da mesma
+     data ou mais nova que a do banco - na primeira vez (o aparelho dela e
+     quem sabe o que ela fez); depois, so se o banco nao tem;
+   - a copia que o gestor tem das filas dos outros so sobe onde o banco nao
+     tem nada (a data mais nova ja sobe em carregarNuvem).
+   O vendedor so le as linhas dele, entao so compara as dele. */
+function migrarParaBanco(mapa, local, noBanco, subir){
+  var v = STATE.vend; if(!v) return;
+  var feitos = {}; try{ feitos = JSON.parse(localStorage.getItem("radar_fs_migrado")||"{}") || {}; }catch(e){}
+  Object.keys(local).forEach(function(vid){
+    var meu = (vid===v.id);
+    if(!meu && !v.gestor) return;
+    var primeira = meu && !feitos[vid];
+    var m = local[vid] || {};
+    Object.keys(m).forEach(function(lead){
+      var r = m[lead]; if(!r || !r.s || r.s==="novo") return;
+      var b = noBanco[vid+"|"+lead];
+      if(b && !(primeira && String(r.d||"") >= String(b.d||"") && regDiferente(r, linhaParaReg(b)))) return;
+      (mapa[vid] || (mapa[vid] = {}))[lead] = r;
+      subir.push([vid, lead]);
+    });
+    if(meu) feitos[vid] = HOJE;
+  });
+  try{ localStorage.setItem("radar_fs_migrado", JSON.stringify(feitos)); }catch(e){}
+}
+
 /* O vendedor nao baixa as linhas dos outros. O que ele precisa saber e se um
    lead NAO TRABALHADO da fila dele ja foi marcado por outra pessoa (aplicarDono
    devolve o lead a quem trabalhou, e o cartao avisa). Isso vem numa consulta
-   so dos ids da fila dele, em lotes de 40, e a resposta e quase sempre vazia.
-   Roda na leitura cheia e depois a cada 30 min. O gestor nao precisa: ele le
-   as linhas de todo mundo. */
+   so dos ids da fila dele, em lotes de 30 (limite do Firebase), e a resposta e
+   quase sempre vazia. Roda na leitura cheia e depois a cada 30 min. O gestor
+   nao precisa: ele le as linhas de todo mundo. */
 function outrosNaMinhaFila(forcar){
   var v=STATE.vend;
-  if(!v || v.gestor || !sbConfigurado()) return Promise.resolve(false);
+  if(!v || v.gestor || !bancoConfigurado()) return Promise.resolve(false);
   if(!forcar && Date.now()-LEITURA.outrosEm < OUTROS_MS) return Promise.resolve(false);
   LEITURA.outrosEm = Date.now();
   var ids = todosLeads().filter(function(l){
-    return l.vend===v.id && statusDe(v.id,l.id)==="novo" && /^[a-z0-9-]+$/.test(String(l.id||""));
-  }).map(function(l){ return l.id; });
+    return l.vend===v.id && statusDe(v.id,l.id)==="novo" && l.id;
+  }).map(function(l){ return String(l.id); });
   var lotes=[], i;
-  for(i=0; i<ids.length; i+=40) lotes.push(ids.slice(i,i+40));
+  for(i=0; i<ids.length; i+=30) lotes.push(ids.slice(i,i+30));
   var achados=[];
   function um(k){
     if(k>=lotes.length) return Promise.resolve(achados);
-    return sbTudo("atividade?select=vend,lead,s,m,d&vend=neq."+encodeURIComponent(v.id)+"&lead=in.("+lotes[k].join(",")+")")
-      .then(function(linhas){ achados=achados.concat(linhas||[]); return um(k+1); });
+    return fsConsulta("atividade", [fEm("lead", lotes[k])], [])
+      .then(function(linhas){
+        achados=achados.concat((linhas||[]).filter(function(x){ return x && x.vend!==v.id; }));
+        return um(k+1);
+      });
   }
   return um(0).then(function(linhas){
     var mudou=false;
@@ -3368,49 +3564,12 @@ function outrosNaMinhaFila(forcar){
   });
 }
 
+/* 22/10/2026: no Firebase nao ha tabela de leads (no Supabase ela estava
+   vazia desde 11/09). A lista vem embutida no arquivo, que a rotina das 4h
+   publica. O nome continua porque o resto do codigo chama esta funcao. */
 function carregarLeadsNuvem(){
-  if(!sbConfigurado()) return Promise.resolve(false);
-  return sbPedir("leads?select=*&order=remessa.desc")
-    .then(function(r){ if(!r.ok) throw new Error(String(r.status)); return r.json(); })
-    .then(function(linhas){
-      DIAG.leadsNuvemLinhas = (linhas||[]).length;
-      if(!linhas || !linhas.length){ DIAG.leadsFonte="embutida"; return false; }
-      var daNuvem = linhas.map(function(x){
-        return { id:x.id, empresa:x.empresa, nicho:x.nicho, cidade:x.cidade,
-                 ig:x.ig, wa:x.wa, pageId:x.page_id, gancho:x.gancho,
-                 prio:x.prio, oferta:x.oferta, vend:x.vend,
-                 loteData: String(x.remessa||"").slice(0,10) };
-      });
-      function maiorData(arr){
-        var d=""; (arr||[]).forEach(function(l){
-          var v=String((l&&l.loteData)||""); if(v>d) d=v; }); return d;
-      }
-      DIAG.leadsNuvemData    = maiorData(daNuvem);
-      DIAG.leadsEmbutidaData = maiorData(LEADS_EMBUTIDOS);
-      /* O banco COMPLETA a lista embutida, nunca a substitui - a mesma regra
-         que ja vale para a atividade. Antes ele substituia: uma tabela "leads"
-         atrasada apagava a remessa recem-publicada e o time abria o dia com
-         zero lead novo, sem nenhum aviso na tela. */
-      var idsEmb={}; LEADS_EMBUTIDOS.forEach(function(l){ if(l&&l.id) idsEmb[l.id]=1; });
-      var so=0; daNuvem.forEach(function(l){ if(l&&l.id&&!idsEmb[l.id]) so++; });
-      DIAG.leadsSoDaNuvem = so;
-      var porId={}, ordem=[];
-      function juntar(l){
-        if(!l || !l.id) return;
-        if(!(l.id in porId)) ordem.push(l.id);
-        porId[l.id]=l;
-      }
-      daNuvem.forEach(juntar);          /* primeiro o que veio da nuvem */
-      LEADS_EMBUTIDOS.forEach(juntar);  /* o embutido vence quando o id se repete */
-      DIAG.leadsFonte = "nuvem+embutida";
-      montarLotes(aplicarRemanejo(ordem.map(function(id){ return porId[id]; })));
-      return true;
-    })
-    .catch(function(e){
-      DIAG.leadsFonte="erro"; DIAG.leadsErro=e.message;
-      if(window.console && console.warn) console.warn("[radar] tabela leads: "+e.message);
-      return false;
-    });
+  DIAG.leadsFonte = "embutida";
+  return Promise.resolve(false);
 }
 
 
@@ -3492,19 +3651,21 @@ function registrarToque(vid, leadId, reg, primeiro){
 var ESCOANDO_H = false;
 function escoarH(){
   if(ESCOANDO_H || !FILA_H.length) return;
-  if(!sbConfigurado()) return;
+  if(!bancoConfigurado()) return;
   if(typeof navigator !== "undefined" && navigator.onLine === false) return;
   ESCOANDO_H = true;
   var lote = FILA_H.slice(0, 50);
-  sbPedir("historico?on_conflict=ev", {
-    method: "POST",
-    headers: { "Prefer": "resolution=ignore-duplicates,return=minimal" },
-    body: JSON.stringify(lote)
-  }).then(function(r){
-    if(!r.ok) return r.text().then(function(t){ throw new Error(r.status + " " + t); });
-    var ids = {}; lote.forEach(function(x){ ids[x.ev] = 1; });
-    FILA_H = FILA_H.filter(function(x){ return !ids[x.ev]; });
+  /* o id do documento e o proprio ev: reenviar o mesmo toque so regrava */
+  fsGravar("historico", lote, function(x){ return fsId(x.ev); }, function(x){
+    return { ev:fsId(x.ev), vend:x.vend, lead:x.lead, s:x.s||null, m:x.m||null,
+             d:x.d||null, ts:x.ts||null, p1:String(x.ev||"").indexOf("p1:")===0 };
+  }).then(function(falhas){
+    var ruins = {}; falhas.forEach(function(f){ ruins[f.item.ev] = 1; });
+    var ids = {}; lote.forEach(function(x){ if(!ruins[x.ev]) ids[x.ev] = 1; });
+    FILA_H = FILA_H.filter(function(x){ return !ids[x.ev] && !ruins[x.ev]; })
+                   .concat(lote.filter(function(x){ return ruins[x.ev]; }));
     gravarFilaH();
+    if(falhas.length) throw new Error(falhas.length + " toque(s) recusado(s): " + falhas[0].erro);
     ESCOANDO_H = false;
     ENVIO_H_APOS = 0; ENVIO_H_FALHAS = 0;
     DIAG.histEscritaOk = true; DIAG.histEscritaErro = ""; DIAG.histEnviadoAs = horaAgora();
@@ -3517,53 +3678,93 @@ function escoarH(){
   });
 }
 
-/* O Supabase devolve no maximo 1000 linhas por pedido. Sem paginar, a
-   partir da milesima marcacao o painel passaria a mostrar menos do que
-   existe, sem nenhum aviso. */
-function sbTudo(caminho, passo){
-  passo = passo || 1000;
-  var tudo = [];
-  function pagina(ini){
-    var fim = ini + passo - 1;
-    return sbPedir(caminho, { headers: { "Range-Unit":"items", "Range": ini+"-"+fim } })
-      .then(function(r){
-        if(r.status === 416) return tudo;
-        if(!r.ok) throw new Error(String(r.status));
-        return r.text().then(function(txt){
-          contarLeitura((txt||"").length);
-          var linhas = txt ? JSON.parse(txt) : [];
-          linhas = linhas || [];
-          tudo = tudo.concat(linhas);
-          if(linhas.length < passo) return tudo;
-          return pagina(ini + passo);
-        });
-      });
-  }
-  return pagina(0);
+/* ---------- cache grande no aparelho (IndexedDB) ----------
+   O historico cresce todo dia e cada documento lido conta na cota do
+   Firebase. O aparelho do gestor guarda o que ja leu e so pede o que mudou.
+   O localStorage (5 MB) ja guarda o espelho das filas, entao o historico vai
+   no IndexedDB. Se ele nao abrir (aba anonima, por exemplo), segue sem cache. */
+var IDB = null;
+function idbAbrir(){
+  if(IDB) return IDB;
+  IDB = new Promise(function(ok){
+    try{
+      var rq = indexedDB.open("radar", 1);
+      rq.onupgradeneeded = function(){ rq.result.createObjectStore("kv"); };
+      rq.onsuccess = function(){ ok(rq.result); };
+      rq.onerror = function(){ ok(null); };
+      rq.onblocked = function(){ ok(null); };
+    }catch(e){ ok(null); }
+  });
+  return IDB;
+}
+function cacheLer(chave){
+  return idbAbrir().then(function(db){
+    if(!db) return null;
+    return new Promise(function(ok){
+      try{
+        var rq = db.transaction("kv","readonly").objectStore("kv").get(chave);
+        rq.onsuccess = function(){ ok(rq.result || null); };
+        rq.onerror = function(){ ok(null); };
+      }catch(e){ ok(null); }
+    });
+  });
+}
+function cacheGravar(chave, valor){
+  return idbAbrir().then(function(db){
+    if(!db) return false;
+    return new Promise(function(ok){
+      try{
+        var tx = db.transaction("kv","readwrite");
+        tx.objectStore("kv").put(valor, chave);
+        tx.oncomplete = function(){ ok(true); };
+        tx.onerror = function(){ ok(false); };
+      }catch(e){ ok(false); }
+    });
+  });
 }
 
-/* ---------- leitura do historico (so o gestor precisa) ---------- */
-var HIST = { linhas:null, ok:null, erro:"", lidoAs:"", carregando:false, maxId:0 };
+/* ---------- leitura do historico (so o gestor precisa) ----------
+   Primeira vez no aparelho: le tudo. Depois: so os toques com t depois da
+   marca (com 5 min de folga; o repetido e reconhecido pelo ev). */
+var HIST = { linhas:null, ok:null, erro:"", lidoAs:"", carregando:false, marca:"" };
+var HIST_CACHE = "historico_v1_" + FB.projeto;
 function carregarHistorico(){
-  if(!sbConfigurado()){ HIST.ok=false; HIST.erro="sem banco configurado"; if(HIST.linhas===null) HIST.linhas=[]; return Promise.resolve(false); }
+  if(!bancoConfigurado()){ HIST.ok=false; HIST.erro="sem banco configurado"; if(HIST.linhas===null) HIST.linhas=[]; return Promise.resolve(false); }
   if(HIST.carregando) return Promise.resolve(false);
   HIST.carregando = true;
-  /* 13/10: inteiro so na primeira vez; depois so os toques novos (id > ultimo) */
-  var desde = (HIST.linhas && HIST.linhas.length && HIST.maxId) ? HIST.maxId : 0;
-  return sbTudo("historico?select=id,vend,lead,s,m,d,ts&order=id.asc" + (desde ? "&id=gt."+desde : ""))
-    .then(function(linhas){
-      linhas = linhas || [];
-      HIST.linhas = desde ? (HIST.linhas||[]).concat(linhas) : linhas;
-      linhas.forEach(function(x){ var id=parseInt(x&&x.id,10); if(id>(HIST.maxId||0)) HIST.maxId=id; });
-      HIST.ok = true; HIST.erro = ""; HIST.lidoAs = horaAgora() + (desde ? " (+"+linhas.length+" toque(s) novo(s))" : " (leitura cheia)");
-      HIST.carregando = false; return true;
-    })
-    .catch(function(e){
-      HIST.carregando = false; HIST.ok = false; HIST.erro = e.message; HIST.lidoAs = horaAgora();
-      if(HIST.linhas === null) HIST.linhas = [];
-      if(window.console && console.warn) console.warn("[radar] historico: leitura falhou: " + e.message);
-      return false;
+  var base = (HIST.linhas && HIST.marca) ? Promise.resolve(null) : cacheLer(HIST_CACHE);
+  var eraVazio = false;
+  return base.then(function(c){
+    if(c && Array.isArray(c.linhas) && c.marca){
+      HIST.linhas = c.linhas.map(function(a){ return { ev:a[0], vend:a[1], lead:a[2], s:a[3], m:a[4]||null, d:a[5], ts:a[6]||"" }; });
+      HIST.marca = c.marca;
+    }
+    eraVazio = !HIST.marca;
+    return fsConsulta("historico", HIST.marca ? [fDepois("t", menosMinutos(HIST.marca, 5))] : [], HIST.marca ? ["t"] : []);
+  }).then(function(novas){
+    var lista = eraVazio ? [] : (HIST.linhas||[]).slice(), pos = {}, n = 0;
+    var maxT = Date.parse(HIST.marca) || 0;
+    lista.forEach(function(x, i){ pos[x.ev] = i; });
+    (novas||[]).forEach(function(x){
+      if(!x || !x.ev) return;
+      var tt = Date.parse(x.t||""); if(tt > maxT) maxT = tt;
+      var lin = { ev:x.ev, vend:x.vend, lead:x.lead, s:x.s, m:x.m||null, d:x.d, ts:x.ts||"" };
+      if(x.ev in pos) lista[pos[x.ev]] = lin;
+      else { pos[x.ev] = lista.length; lista.push(lin); n++; }
     });
+    HIST.linhas = lista;
+    if(maxT) HIST.marca = new Date(maxT).toISOString();
+    HIST.ok = true; HIST.erro = "";
+    HIST.lidoAs = horaAgora() + (eraVazio ? " (leitura cheia)" : " (+"+n+" toque(s) novo(s))");
+    HIST.carregando = false;
+    if(HIST.marca) cacheGravar(HIST_CACHE, { marca:HIST.marca, linhas:lista.map(function(x){ return [x.ev,x.vend,x.lead,x.s,x.m||"",x.d,x.ts||""]; }) });
+    return true;
+  }).catch(function(e){
+    HIST.carregando = false; HIST.ok = false; HIST.erro = e.message; HIST.lidoAs = horaAgora();
+    if(HIST.linhas === null) HIST.linhas = [];
+    if(window.console && console.warn) console.warn("[radar] historico: leitura falhou: " + e.message);
+    return false;
+  });
 }
 
 /* Junta os toques registrados com o estado atual da "atividade": marcacao
@@ -3674,7 +3875,7 @@ function viewHistorico(main){
   if(HIST.ok===false){
     main.appendChild(el("div",{class:"regra",style:"margin-bottom:14px"},[
       el("b",{text:"Não consegui ler a tabela de histórico ("+HIST.erro+")"}),
-      el("div",{text:"Os números abaixo estão vindo só da data da última marcação de cada lead. Se a tabela 'historico' ainda não existe no Supabase, é preciso criá-la; se existe, tente 'Reler agora' no fim da página."})
+      el("div",{text:"Os números abaixo estão vindo só da data da última marcação de cada lead. Tente 'Reler agora' no fim da página; se continuar, veja o painel Sincronização no Gerencial (banco fora do ar ou cota grátis do dia esgotada)."})
     ]));
   }
   var evs = eventosHistorico();
@@ -3840,7 +4041,7 @@ function viewHistorico(main){
     ". Cada clique de classificação vira um registro novo; nada é sobrescrito."+
     (HIST.lidoAs?" Lido às "+HIST.lidoAs+".":"")+(FILA_H.length?" <b>"+FILA_H.length+" toque(s) desta máquina ainda não subiram.</b>":"")}));
   pf.appendChild(el("div",{class:"acts",style:"margin-top:10px"},[
-    el("button",{class:"btn",onclick:function(){ HIST.linhas=null; HIST.maxId=0; escoarH(); sincronizar().then(function(){ render(); }); }},[document.createTextNode("Reler agora")])
+    el("button",{class:"btn",onclick:function(){ HIST.linhas=null; escoarH(); sincronizar().then(function(){ render(); }); }},[document.createTextNode("Reler agora")])
   ]));
   main.appendChild(pf);
 }
@@ -3853,6 +4054,7 @@ lerFilaH();
 lerEspelho();
 /* primeiros contatos que esta maquina registrou e ainda nao subiram */
 FILA_H.forEach(function(x){ if(x && x.vend && x.lead && String(x.ev||"").indexOf("p1:")===0) marcarPrimeiro(x.vend, x.lead, String(x.d||"").slice(0,10)); });
+carregarPrimeiros();
 aplicarDono();
 
 function restaurarVend(){
@@ -3868,16 +4070,16 @@ function restaurarVend(){
 restaurarVend();
 render();
 
-/* 13/10: modo "tudo" forca a leitura cheia (entrada da pessoa, botao "Reler o
-   banco agora"). Sem modo, e a leitura periodica: so o que mudou. Quem decide
-   o ritmo e sincronizarSeNaHora(), com o intervalo de quem esta logado. */
+/* 22/10: modo "cheia" (botao "Reler o banco agora") forca a leitura cheia.
+   "tudo" (entrada da pessoa, abertura da pagina) e sem modo (leitura
+   periodica) pedem so o que mudou - a leitura cheia acontece sozinha na
+   primeira vez de cada aparelho. Quem decide o ritmo e sincronizarSeNaHora(),
+   com o intervalo de quem esta logado. */
 function sincronizar(modo){
   if(!STATE.vend) return Promise.resolve(false);
-  var tudo = (modo==="tudo");
-  if(tudo) LEITURA.cheiaFeita = false;
   LEITURA.ultimaEm = Date.now();
   var hist = (STATE.vend.gestor && STATE.view==="historico") ? carregarHistorico() : Promise.resolve(false);
-  return Promise.all([carregarNuvem(tudo), hist, carregarPrimeiros()]).then(function(r){
+  return Promise.all([carregarNuvem(modo==="cheia" ? "cheia" : ""), hist]).then(function(r){
     var ok = r[0];
     if((ok || r[1]) && !digitando()) render();
     else {
