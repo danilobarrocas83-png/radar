@@ -143,40 +143,64 @@
   }
 
   /* ---------- estado do banco (pool/atividade.tsv) ---------- */
-  /* Lê a tabela atividade inteira, de 1000 em 1000 (limite do Supabase por pedido). */
-  function lerAtividade(fetchFn, base, chaves) {
-    var caminho = "atividade?select=vend,lead,s,m,d&order=vend.asc,lead.asc";
-    function comChave(k) {
-      var tudo = [], passo = 1000;
-      function pagina(ini) {
-        return fetchFn(base + caminho, { headers: {
-          "apikey": chaves[k], "Authorization": "Bearer " + chaves[k], "Accept": "application/json",
-          "Range-Unit": "items", "Range": ini + "-" + (ini + passo - 1) } })
-          .then(function (r) {
-            if (r.status === 416) return tudo;
-            if ((r.status === 401 || r.status === 403) && k + 1 < chaves.length) return comChave(k + 1);
-            if (r.status !== 200 && r.status !== 206) throw new Error("HTTP " + r.status + " na pagina que comeca em " + ini);
-            return r.json().then(function (pg) {
-              if (!Array.isArray(pg)) throw new Error("resposta inesperada do banco");
-              tudo = tudo.concat(pg);
-              return pg.length < passo ? tudo : pagina(ini + passo);
-            });
-          });
-      }
-      return pagina(0);
+  /* Lê a coleção atividade inteira, de 2000 em 2000. Desde 22/10/2026 o banco é o Firebase
+     (Cloud Firestore) do projeto que está no radar.html; o Supabase saiu do ar. As regras do
+     banco exigem login: entra com um login anônimo novo (só leitura daqui). */
+  function lerAtividade(fetchFn, banco) {
+    var CAMPOS = ["vend", "lead", "s", "m", "d"], PASSO = 2000;
+    var docs = "projects/" + banco.projeto + "/databases/(default)/documents";
+    function json(r, onde) {
+      return r.text().then(function (t) {
+        var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {}
+        if (!r.ok) {
+          var e0 = Array.isArray(j) ? j[0] : j;
+          throw new Error("HTTP " + r.status + " " + onde + ": " + ((e0 && e0.error && (e0.error.status || e0.error.message)) || String(t || "").slice(0, 160)));
+        }
+        return j;
+      });
     }
-    return comChave(0);
+    function valor(v) {
+      if (!v) return null;
+      if ("stringValue" in v) return v.stringValue;
+      if ("timestampValue" in v) return v.timestampValue;
+      return null;
+    }
+    return fetchFn("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + encodeURIComponent(banco.chave), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ returnSecureToken: true }) })
+      .then(function (r) { return json(r, "no login"); })
+      .then(function (login) {
+        var tudo = [];
+        function pagina(cursor) {
+          var q = { from: [{ collectionId: "atividade" }],
+                    select: { fields: CAMPOS.map(function (f) { return { fieldPath: f }; }) },
+                    orderBy: [{ field: { fieldPath: "__name__" }, direction: "ASCENDING" }], limit: PASSO };
+          if (cursor) q.startAt = { values: [{ referenceValue: cursor }], before: false };
+          return fetchFn("https://firestore.googleapis.com/v1/" + docs + ":runQuery", { method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + login.idToken },
+            body: JSON.stringify({ structuredQuery: q }) })
+            .then(function (r) { return json(r, "na leitura"); })
+            .then(function (arr) {
+              if (!Array.isArray(arr)) throw new Error("resposta inesperada do banco");
+              var pg = arr.filter(function (x) { return x && x.document; }).map(function (x) { return x.document; });
+              pg.forEach(function (d) {
+                var f = d.fields || {}, o = {};
+                CAMPOS.forEach(function (k) { o[k] = valor(f[k]); });
+                tudo.push(o);
+              });
+              return pg.length < PASSO ? tudo : pagina(pg[pg.length - 1].name);
+            });
+        }
+        return pagina(null);
+      });
   }
-  /* URL e chaves públicas do banco, as mesmas que o radar usa (var SB = {...}). */
+  /* Projeto e chave pública do banco, os mesmos que o radar usa (var FB = {...}). */
   function bancoDoHtml(html) {
-    var i = html.indexOf("var SB = {");
-    if (i < 0) throw new Error("nao achei 'var SB = {' no HTML");
+    var i = html.indexOf("var FB = {");
+    if (i < 0) throw new Error("nao achei 'var FB = {' no HTML");
     var bloco = html.slice(i, i + 1500);
-    var u = /url:\s*"([^"]+)"/.exec(bloco), k = /keys:\s*\[([^\]]+)\]/.exec(bloco);
-    if (!u || !k) throw new Error("nao consegui ler url/keys do banco no HTML");
-    var chaves = (k[1].match(/"([^"]+)"/g) || []).map(function (x) { return x.slice(1, -1); });
-    if (!chaves.length) throw new Error("nenhuma chave publica no HTML");
-    return { base: u[1].replace(/\/+$/, "") + "/rest/v1/", chaves: chaves };
+    var p = /projeto:\s*"([^"]+)"/.exec(bloco), k = /chave:\s*"([^"]+)"/.exec(bloco);
+    if (!p || !k) throw new Error("nao consegui ler projeto/chave do banco no HTML");
+    return { projeto: p[1], chave: k[1] };
   }
   /* Só o que a rotina precisa: lead, vendedor, status, data e o botão marcado, dos leads
      que estão no radar. */

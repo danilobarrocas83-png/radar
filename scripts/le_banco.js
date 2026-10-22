@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-/* le_banco.js — copia o ESTADO das marcações do time (tabela "atividade" do Supabase) para
-   pool/atividade.tsv. A rotina da madrugada roda num ambiente que não alcança o banco; é por
-   este arquivo que ela sabe quais leads ainda não receberam a primeira mensagem.
+/* le_banco.js — copia o ESTADO das marcações do time (coleção "atividade" do Firebase; até
+   15/10/2026 era o Supabase) para pool/atividade.tsv. A rotina da madrugada roda num ambiente
+   que não alcança o banco; é por este arquivo que ela sabe quais leads ainda não receberam a
+   primeira mensagem.
 
    Roda no GitHub Actions (.github/workflows/estado-banco.yml). No banco, só leitura.
    Vão para o arquivo apenas: id do lead, id do vendedor, status e data da última marcação,
@@ -22,7 +23,7 @@ const ids = {};
 R.extraiVar(html, "LEADS_EMBUTIDOS").valor.forEach((l) => { ids[l.id] = 1; });
 const banco = R.bancoDoHtml(html);
 
-R.lerAtividade(fetch, banco.base, banco.chaves).then((linhas) => {
+R.lerAtividade(fetch, banco).then((linhas) => {
   if (!linhas.length) throw new Error("o banco respondeu sem nenhuma linha; nao vou gravar um estado vazio");
   const agora = new Date().toISOString().replace(/\.\d+Z$/, "Z");
   const t = R.tsvAtividade(linhas, ids, agora);
