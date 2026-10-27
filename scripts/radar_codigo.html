@@ -766,7 +766,8 @@ var ABERTURA_FIM=" empresas de todo o Brasil a atraírem mais clientes e faturar
    trouxeram resposta). Texto identico em massa chama a atencao do WhatsApp, e
    o rodizio mostra qual responde mais (Gerencial > Aberturas). A versao sai do
    id do lead: o mesmo lead ve sempre a mesma. A = a de 07/10; B = a do
-   "deixando clientes na mesa"; C = as duas juntas. versaoAbertura() tambem
+   "deixando clientes na mesa"; C = as duas juntas (B e C aprovadas pelo
+   Danilo em 27/10). versaoAbertura() tambem
    esta em scripts/radar_fila.js (planilhas): nao mude uma sem a outra. */
 var LETRA_ABERTURA=["A","B","C"], ABERTURAS_DESDE="2026-10-27";
 function versaoAbertura(id){
@@ -906,7 +907,7 @@ function txtFup1(vendNome,l){ return txtFupUnico(l); }
 /* 27/10: o follow-up de quem nao respondeu e um so, e nao repete a abertura
    que o lead recebeu: versao A recebe o texto do "deixando clientes na mesa"
    (o que ja trouxe reuniao); B, que abriu com ele, recebe a pergunta do
-   Instagram; C recebe so a parte do CLT. */
+   Instagram; C recebe so a parte do CLT. Aprovados pelo Danilo em 27/10. */
 function txtFupUnico(l){
   var v=versaoDe(l);
   if(v===1) return "Oi, tudo bem? Só pra saber: vocês já investem em anúncios no Instagram?\n\n"+
@@ -917,7 +918,8 @@ function txtFupUnico(l){
 }
 /* retomadas de quem respondeu e parou: a 1 e o "Ficou alguma duvida" de antes
    (TXT_SUMIU); a 2, a ultima, fecha com o horario, como a conversa da imagem
-   que o Danilo mandou ("me fala um horario que eu ja reservo com o Danilo") */
+   que o Danilo mandou ("me fala um horario que eu ja reservo com o Danilo").
+   Aprovadas pelo Danilo em 27/10. */
 var TXT_RET2="Oi, [Nome]! Passando pra nossa conversa não se perder. Consigo reservar 20 minutinhos com o Danilo pra você amanhã: fica melhor de manhã ou de tarde?\n\n"+
   "Se agora não for o momento, me avisa que eu te procuro mais pra frente.";
 /* o texto do toque devido */
