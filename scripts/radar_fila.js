@@ -8,8 +8,9 @@
      empresas com capital declarado até R$ 200 mil.
    - Terça e quinta são dia de follow-up: não entra lead novo, e os follow-ups vencidos são
      repartidos por igual entre as filas, para ninguém ficar sem trabalho e nenhum lead ficar
-     sem os cinco contatos da cadência (desde 26/10: primeira mensagem e quatro follow-ups,
-     nos dias 0, 2, 5, 10 e 20 — ver CADENCIA). O lead repassado
+     sem o follow-up (desde 27/10: quem não respondeu a primeira mensagem recebe UM
+     follow-up, dois dias depois — ver passoCadencia). As retomadas de quem respondeu
+     ficam com quem conversou e não entram no repasse. O lead repassado
      leva junto o estado em que estava (campo `her`); a mensagem sai no nome de quem envia.
    - Fora desse repasse, lead trabalhado não muda de fila: ele é de quem marcou.
 
@@ -24,28 +25,33 @@
 
   var CAP_MAX = 200000;
   var COTA_PADRAO = 30;
-  /* Cadência de 26/10/2026 (pedido do Danilo: "muitos clientes não respondem de primeira"):
-     cinco toques — primeira mensagem, follow-up 1 dois dias depois, follow-up 2 três dias
-     depois do 1, follow-up 3 cinco dias depois do 2 e follow-up 4 (o último) dez dias depois
-     do 3: dias 0, 2, 5, 10 e 20. O mesmo calendário está em scripts/radar_codigo.html
-     (CADENCIA): não mude um sem mudar o outro.
-     Quem recebeu o follow-up 2 antes de 27/10 recebeu o texto "última vez que te chamo":
-     para esses a cadência já encerrou. fup2 com m "sumiu" é "respondeu e sumiu", não é
-     passo da cadência. */
-  var CADENCIA = { contatado: { para: "fup1", dias: 2 }, fup1: { para: "fup2", dias: 3 },
-                   fup2: { para: "fup3", dias: 5 }, fup3: { para: "fup4", dias: 10 } };
-  var CADENCIA_DESDE = "2026-10-27";
-  /* o passo da cadência que este registro deve, ou null (fora da cadência ou encerrada) */
+  /* Cadência de 27/10/2026 (pedido do Danilo): quem NÃO respondeu a primeira mensagem
+     recebe UM follow-up, dois dias depois, e encerra (fup1). Quem respondeu e parou recebe
+     duas retomadas com dois dias entre elas (conversa -> ret1 -> ret2): essas são da
+     conversa, ficam com quem conversou e NÃO entram no repasse de terça e quinta. O mesmo
+     calendário está em scripts/radar_codigo.html (CADENCIA). fup2 a fup4 são da cadência
+     de 26/10, que durou um dia: contam como encerrados. */
+  var FUP_DIAS = 2;
+  /* o follow-up repassável que este registro deve, ou null */
   function passoCadencia(r) {
-    if (!r || !r.s || !CADENCIA[r.s]) return null;
-    if (r.s === "contatado" && r.m === "recepcao") return null;
-    if (r.s === "fup2" && (r.m === "sumiu" || String(r.d || "") < CADENCIA_DESDE)) return null;
-    return CADENCIA[r.s];
+    if (!r || r.s !== "contatado" || r.m === "recepcao") return null;
+    return { para: "fup1", dias: FUP_DIAS };
+  }
+  /* ainda deve retomada (respondeu e parou): não sai do radar por prazo curto */
+  function deveRetomada(r) {
+    return !!r && (r.s === "conversa" || r.s === "ret1" || (r.s === "fup2" && r.m === "sumiu"));
   }
   /* Por quantos dias um lead já encerrado continua no radar depois do último toque. Quem
      ainda deve follow-up nunca sai. Os prazos são longos (26/10) porque o cliente responde
      dias depois, e o vendedor precisa achar o lead para registrar a resposta. */
-  var GUARDA = { perdido: 30, bloqueado: 7, fup2: 60, fup4: 60, aberto: 90 };
+  var GUARDA = { perdido: 30, bloqueado: 7, fup1: 60, fup2: 60, fup3: 60, fup4: 60, ret2: 60, aberto: 90 };
+  /* A versão da abertura (A, B ou C) que o lead recebe: a mesma conta de versaoAbertura()
+     em scripts/radar_codigo.html, que tem os três textos. Vai nas planilhas do dia. */
+  function versaoAbertura(id) {
+    var s = 7, t = String(id || ""), i;
+    for (i = 0; i < t.length; i++) s = (s * 37 + t.charCodeAt(i)) % 1000033;
+    return s % 3;
+  }
   /* terça (2) e quinta (4): dia de follow-up */
   function diaDeFollowup(iso) {
     var d = new Date(iso + "T12:00:00Z").getUTCDay();
@@ -312,8 +318,8 @@
       var r = estadoDe(l, at);
       if (!r) Object.keys(regs).forEach(function (v) { if (!r || regs[v].d > r.d) r = regs[v]; });
       if (r.s === "reuniao" || r.s === "proposta" || r.s === "fechado") return true;
-      if (r.s === "contatado" || passoCadencia(r)) return true;
-      var limite = (r.s === "fup2" && r.m === "sumiu") ? GUARDA.aberto
+      if (r.s === "contatado") return true;
+      var limite = deveRetomada(r) ? GUARDA.aberto
                  : GUARDA[r.s] !== undefined ? GUARDA[r.s] : GUARDA.aberto;
       var dias = diasEntre(r.d, o.hoje);
       if (dias > limite) { res.removidos++; return false; }
@@ -454,7 +460,8 @@
     plano.filas.forEach(function (v) {
       if (plano.fupDia) { out[v] = []; return; }
       out[v] = plano.leads.filter(function (l) { return l.vend === v && !atividade[l.id]; })
-        .sort(ordemFila).slice(0, plano.cota[v]);
+        .sort(ordemFila).slice(0, plano.cota[v])
+        .map(function (l) { var c = {}, k; for (k in l) c[k] = l[k]; c.abertura = "ABC".charAt(versaoAbertura(l.id)); return c; });
     });
     return out;
   }
@@ -615,7 +622,7 @@
     bancoDoHtml: bancoDoHtml, tsvAtividade: tsvAtividade, parseTsvAtividade: parseTsvAtividade,
     mapaAtividade: mapaAtividade, filasAtivas: filasAtivas, planejar: planejar, leadsDoDia: leadsDoDia,
     diaDeFollowup: diaDeFollowup, estadoDe: estadoDe, fupVencido: fupVencido,
-    CADENCIA: CADENCIA, CADENCIA_DESDE: CADENCIA_DESDE, passoCadencia: passoCadencia, GUARDA: GUARDA,
+    FUP_DIAS: FUP_DIAS, passoCadencia: passoCadencia, deveRetomada: deveRetomada, GUARDA: GUARDA, versaoAbertura: versaoAbertura,
     parsePool: parsePool, selecionarNovos: selecionarNovos, montarNovos: montarNovos, conferir: conferir };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.RadarFila = api;
