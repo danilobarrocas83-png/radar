@@ -1065,7 +1065,7 @@ var BIBLIOTECA=[
 
  ["Follow-up 4 (10 dias depois do follow-up 3, o último)",
   TXT_FUP4,
-  "“Última vez” tira a ameaça de insistência; “se tá bom, ignora” devolve o controle e é o que faz quem não está bem responder. Se ele responder, mande a segunda mensagem de “é por indicação”, que explica em poucas linhas o que o Danilo faz. Com isso a cadência encerra: primeira mensagem e quatro follow-ups, em cerca de 20 dias. Não existe follow-up 5. Se ele responder depois, ache o lead em “Quem respondeu” e classifique."],
+  "“Última vez” tira a ameaça de insistência; “se tá bom, ignora” devolve o controle e é o que faz quem não está bem responder. Se ele responder, mande a segunda mensagem de “é por indicação”, que explica em poucas linhas o que o Danilo faz. Com isso a cadência encerra: primeira mensagem e quatro follow-ups, em cerca de 20 dias. Não existe follow-up 5. Se ele responder depois, o lead continua em Meus leads, no filtro “Já contatados”, pelo dia da última mensagem: abra e classifique."],
 
  ["Respondeu e sumiu — depois da resposta ou do convite",
   TXT_SUMIU,
@@ -1444,8 +1444,8 @@ function seqPainel(proprio){
   var recentes=(s.enviados||[]).map(function(id){ return leadPorId(id); }).filter(Boolean);
   var ultimos=recentes.length?el("div",{class:"hint",style:"margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center"},
     [document.createTextNode("Enviados agora há pouco:")].concat(recentes.map(function(x){
-      return el("button",{class:"chip",onclick:function(){ abrirNoRespostas(x.id); }},[document.createTextNode(x.empresa)]);
-    })).concat([document.createTextNode("Alguém respondeu? Toque no nome, ou use “Quem respondeu” no menu.")])):null;
+      return el("button",{class:"chip",onclick:function(){ abrirContatado(x.id); }},[document.createTextNode(x.empresa)]);
+    })).concat([document.createTextNode("Alguém respondeu? Toque no nome: o cartão abre em “Já contatados”.")])):null;
   if(!l){
     var fim = modo==="fup"
       ? "Os "+fd.hoje+" follow-up(s) que faltam precisam do cartão (empresa sem WhatsApp, recepção, ou você pulou): abra cada um na lista de Follow-ups aqui embaixo."
@@ -1626,7 +1626,7 @@ document.addEventListener("focusout",function(){
   setTimeout(function(){ if(RENDER_PEND&&!digitando()) render(); },60);
 });
 
-var VERSAO_RADAR="26/10/2026 - cadência de 5 toques, aba Quem respondeu (busca pelo número), lead novo só com follow-up em dia";
+var VERSAO_RADAR="26/10/2026 - cadência de 5 toques, lead contatado continua em Meus leads (Já contatados), lead novo só com follow-up em dia";
 /* ---------- gate: quem e voce ---------- */
 function entrarComo(p){
   try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
@@ -2049,7 +2049,6 @@ function shell(){
   }
   abas.push(["leads",v.gestor?"Todos os leads":"Meus leads",nNovos]);
   abas.push(["followups","Follow-ups",nFup]);
-  abas.push(["respostas","Quem respondeu",null]);
   abas.push(v.gestor?["ranking","Ranking",null]:["resumo","Resumo do dia",null]);
   abas.push(["scripts","Scripts",null]);
   if(v.gestor){ abas.push(["gerencial","Gerencial",null]); abas.push(["historico","Histórico",null]); }
@@ -2088,7 +2087,6 @@ function shell(){
   if(STATE.view==="leads") viewLeads(main,false);
   else if(STATE.view==="meus") viewLeads(main,true);
   else if(STATE.view==="followups") viewFollowups(main);
-  else if(STATE.view==="respostas") viewRespostas(main);
   else if(STATE.view==="ranking") viewRanking(main);
   else if(STATE.view==="scripts") viewScripts(main);
   else if(STATE.view==="resumo") viewResumo(main);
@@ -2103,7 +2101,6 @@ var ICONES={
  meus:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5.5" cy="5" r="2.4"/><path d="M1.6 13c.5-2.3 2-3.4 3.9-3.4s3.4 1.1 3.9 3.4"/><path d="M10 5h4M10 8h4M10 11h4"/></svg>',
  leads:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h7"/></svg>',
  followups:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg>',
- respostas:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/><path d="M5.5 7l1.6 1.5L10.5 5.5"/></svg>',
  ranking:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 13V8M8 13V3.5M13 13V6"/></svg>',
  scripts:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 2h6L13 5.5V14H3.5z"/><path d="M9.2 2v3.6H13"/></svg>',
  resumo:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 11.5 6 7l3 2.6L14 4"/><path d="M10.5 4H14v3.4"/></svg>',
@@ -2204,10 +2201,11 @@ function viewLeads(main,proprio){
   }
 
   /* o vendedor nao tem filtro de "nao contatados": o que nao cabe no dia fica guardado */
+  var nContatados=meus.filter(function(l){ return statusDe(donoDoLead(l),l.id)!=="novo"; }).length;
   var filtros=timeTodo
-    ? [["hoje","Novos de hoje (time)"],["fup","Follow-ups"],["novo","Não contatados (base toda)"],["A","Quentes"],
+    ? [["hoje","Novos de hoje (time)"],["fup","Follow-ups"],["contatados","Já contatados"+(nContatados?" · "+nContatados:"")],["novo","Não contatados (base toda)"],["A","Quentes"],
        ["andamento","Em andamento"],["reuniao","Reuniões"],["todos","Todos"]]
-    : [["fup","1. Follow-ups de hoje"],["hoje","2. Leads novos"],["A","Quentes"],
+    : [["fup","1. Follow-ups de hoje"],["hoje","2. Leads novos"],["contatados","Já contatados"+(nContatados?" · "+nContatados:"")],["A","Quentes"],
        ["andamento","Em andamento"],["reuniao","Reuniões"],["todos","Todos"]];
   if(!timeTodo&&STATE.filtro==="novo") STATE.filtro="hoje";
   var fr=el("div",{class:"filters"});
@@ -2215,7 +2213,7 @@ function viewLeads(main,proprio){
     fr.appendChild(el("button",{class:"chip","aria-pressed":STATE.filtro===f[0]?"true":"false",
       onclick:function(){STATE.filtro=f[0];STATE.filtroManual=true;render()}},[document.createTextNode(f[1])]));
   });
-  fr.appendChild(el("input",{class:"search",type:"text",placeholder:"Buscar empresa, cidade ou número…",
+  fr.appendChild(el("input",{class:"search",type:"text",placeholder:"Buscar empresa ou cidade…",
     value:STATE.busca,oninput:function(e){STATE.busca=e.target.value;desenharLista(lista,v,proprio);}}));
   main.appendChild(fr);
 
@@ -2245,6 +2243,8 @@ function filtrar(arr,timeTodo){
     /* follow-ups: quem ja foi tocado, esta na vez do proximo toque e cabe no dia */
     if(f==="fup"&&!fupHoje(dono,l.id)) return false;
     if(f==="novo"&&s!=="novo") return false;
+    /* ja recebeu mensagem: nao some da tela depois do envio (26/10) */
+    if(f==="contatados"&&s==="novo") return false;
     if(f==="A"&&l.prio!=="A") return false;
     if(f==="andamento"&&ABERTOS.indexOf(s)<0) return false;
     if(f==="reuniao"&&s!=="reuniao"&&s!=="fechado") return false;
@@ -2276,7 +2276,18 @@ function desenharLista(cont,v,proprio){
   }
   if(STATE.filtro==="hoje" && !arr.some(function(l){return statusDe(donoDoLead(l),l.id)==="novo";}))
     cont.appendChild(el("div",{class:"empty",text:fimDoDia+" Os leads abaixo já estão marcados com ✓."}));
-  arr.slice(0,200).forEach(function(l){cont.appendChild(linha(l,v));});
+  if(STATE.filtro==="contatados" && !STATE.busca.trim()){
+    /* do envio mais recente para o mais antigo, com o dia em cima de cada grupo */
+    arr=arr.slice().sort(function(a,b){ var x=ultimoToque(a), y=ultimoToque(b); return x>y?-1:x<y?1:ordemFila(a,b); });
+    var ontem=somaDias(HOJE,-1), semana=somaDias(HOJE,-7), grupoAtual=null;
+    var grupoDe=function(d){ return d===HOJE?"Mensagem hoje":d===ontem?"Ontem":d>=semana?"Últimos 7 dias":"Mais antigos"; };
+    cont.appendChild(el("p",{class:"hint",style:"margin:0 0 10px",text:"Todo lead que já recebeu mensagem fica aqui, do envio mais recente para o mais antigo. Cliente respondeu? Abra o lead e marque no alto do cartão."}));
+    arr.slice(0,200).forEach(function(l){
+      var g=grupoDe(ultimoToque(l));
+      if(g!==grupoAtual){ grupoAtual=g; cont.appendChild(el("div",{class:"eyebrow",style:"margin:14px 0 8px",text:g})); }
+      cont.appendChild(linha(l,v));
+    });
+  } else arr.slice(0,200).forEach(function(l){cont.appendChild(linha(l,v));});
   if(arr.length>200) cont.appendChild(el("div",{class:"empty",
     text:"Mostrando 200 de "+arr.length+". Use a busca ou os filtros para achar o resto."}));
 }
@@ -2315,7 +2326,7 @@ function linha(l,v){
       el("div",{class:"gancho",text:l.gancho||""})
     ]),
     el("div",{class:"rside"},[
-      mot?el("span",{class:"tagmot",text:mot.rot}):null,
+      mot?el("span",{class:"tagmot",text:mot.rot+(reg.d?" · "+(reg.d===HOJE?"hoje":dataBR(reg.d)):"")}):null,
       el("span",{class:"tag "+(l.prio||"C"),text:l.prio==="A"?"Quente":l.prio==="B"?"Morno":"Frio"}),
       el("span",{class:"pill "+STATUS[st].k,text:STATUS[st].r})
     ])
@@ -2658,12 +2669,12 @@ function viewFollowups(main){
   main.appendChild(lista);
 }
 
-/* ---------- VIEW: quem respondeu (26/10, pedido do Danilo) ----------
-   O cliente responde dias depois, no meio de dezenas de conversas, e o lead
-   ja tinha saido da lista do dia: o vendedor nao achava onde marcar a
-   resposta. Aqui ele acha qualquer lead que ja recebeu mensagem dele - pelo
-   numero do WhatsApp, do jeito que aparece na conversa (+55, DDD, com ou sem
-   o 9 da frente), ou pelo nome - e classifica no cartao. */
+/* ---------- "Ja contatados" (26/10, pedido do Danilo) ----------
+   Quando o vendedor mandava a mensagem, o lead sumia da lista do dia e, se o
+   cliente respondia depois, ninguem achava onde marcar. Agora o lead que ja
+   recebeu mensagem continua em Meus leads, no filtro "Ja contatados",
+   agrupado pelo dia da ultima mensagem, e a linha mostra o que foi feito e
+   quando. A busca procura em todos os filtros. */
 function digitosTel(s){ return String(s||"").replace(/\D/g,""); }
 /* os ultimos 8 digitos: iguais com ou sem +55, DDD e o 9 da frente */
 function chaveTel(s){ var d=digitosTel(s); return d.length>=8?d.slice(-8):""; }
@@ -2682,79 +2693,12 @@ function leadPorId(id){
   var a=leadsDoRender(), i; for(i=0;i<a.length;i++) if(a[i].id===id) return a[i];
   return null;
 }
-/* os leads que ja receberam mensagem de quem esta logado (o gestor ve o time) */
-function leadsTocados(){
-  var v=STATE.vend; if(!v) return [];
-  return leadsDoRender().filter(function(l){
-    if(v.gestor) return statusDe(donoDoLead(l),l.id)!=="novo";
-    var r=regDe(v.id,l.id); return !!(r&&r.s&&r.s!=="novo");
-  });
-}
 function ultimoToque(l){ return String((regDe(donoDoLead(l),l.id)||{}).d||""); }
-/* abre o cartao de um lead na aba "Quem respondeu" (pela busca do numero) */
-function abrirNoRespostas(id){
-  var l=leadPorId(id); if(!l) return;
-  STATE.view="respostas"; STATE.buscaResp=l.wa||l.empresa; STATE.aberto=id; STATE.abertoEraNovo=false;
-  render(); window.scrollTo(0,0);
-}
-function viewRespostas(main){
-  var v=STATE.vend, todos=leadsTocados();
-  main.appendChild(el("div",{class:"page-head"},[el("div",{},[
-    el("h1",{text:"Quem respondeu"}),
-    el("p",{text:"O cliente respondeu no WhatsApp? Cole aqui o número dele (do jeito que aparece na conversa) ou digite o nome da empresa. Aparece todo lead que "+(v.gestor?"o time":"você")+" já contatou, em qualquer etapa — mesmo os que saíram da lista do dia. Abra o cartão e marque o que ele respondeu: o follow-up dele para na hora."})
-  ])]));
-  var cont=el("div");
-  function desenhar(){
-    cont.innerHTML="";
-    var q=String(STATE.buscaResp||"").trim();
-    if(q){
-      var achados=todos.filter(function(l){ return casaBusca(l,q); })
-        .sort(function(a,b){ var x=ultimoToque(a), y=ultimoToque(b); return x>y?-1:x<y?1:0; });
-      if(achados.length===1&&STATE.aberto!==achados[0].id){ STATE.aberto=achados[0].id; STATE.abertoEraNovo=false; }
-      if(!achados.length){
-        var naBase=leadsDoRender().filter(function(l){ return casaBusca(l,q); }).length;
-        cont.appendChild(el("div",{class:"empty",text:"Nenhum lead "+(v.gestor?"contatado pelo time":"que você contatou")+" com “"+q+"”."+
-          (naBase?" Existe"+(naBase>1?"m "+naBase+" leads":" 1 lead")+" na base com isso, mas ainda sem mensagem"+(v.gestor?"":" sua")+".":
-           /^[\d\s()+\-.]+$/.test(q)?" Confira os últimos 8 dígitos do número. Se a empresa respondeu de outro número, busque pelo nome.":"")}));
-        return;
-      }
-      cont.appendChild(el("div",{class:"eyebrow",style:"margin:4px 0 8px",text:achados.length+" encontrado(s)"}));
-      var r=el("div",{class:"rows"});
-      achados.slice(0,100).forEach(function(l){ r.appendChild(linha(l,v)); });
-      cont.appendChild(r);
-      return;
-    }
-    /* sem busca: quem ja respondeu primeiro, depois quem recebeu mensagem, do mais recente */
-    var ord=todos.slice().sort(function(a,b){ var x=ultimoToque(a), y=ultimoToque(b); return x>y?-1:x<y?1:(a.id<b.id?-1:1); });
-    var emConversa=ord.filter(function(l){ return ["conversa","reuniao","proposta"].indexOf(statusDe(donoDoLead(l),l.id))>=0; });
-    var aguardando=ord.filter(function(l){ var s=statusDe(donoDoLead(l),l.id); return s==="contatado"||FUPS.indexOf(s)>=0; });
-    var ontem=somaDias(HOJE,-1), semana=somaDias(HOJE,-7);
-    var grupos=[
-      ["Responderam — conversas em andamento e reuniões",emConversa],
-      ["Mensagem enviada hoje",aguardando.filter(function(l){ return ultimoToque(l)===HOJE; })],
-      ["Mensagem enviada ontem",aguardando.filter(function(l){ return ultimoToque(l)===ontem; })],
-      ["Últimos 7 dias",aguardando.filter(function(l){ var d=ultimoToque(l); return d<ontem&&d>=semana; })],
-      ["Mais antigos",aguardando.filter(function(l){ return ultimoToque(l)<semana; })]
-    ];
-    var mostrados=0, LIM=120;
-    grupos.forEach(function(g){
-      if(!g[1].length) return;
-      cont.appendChild(el("div",{class:"eyebrow",style:"margin:14px 0 8px",text:g[0]+" · "+g[1].length}));
-      var r=el("div",{class:"rows"});
-      g[1].forEach(function(l){ if(mostrados<LIM||l.id===STATE.aberto){ r.appendChild(linha(l,v)); mostrados++; } });
-      cont.appendChild(r);
-    });
-    if(!todos.length) cont.appendChild(el("div",{class:"empty",text:"Ainda não há lead com mensagem enviada."}));
-    else if(mostrados>=LIM) cont.appendChild(el("div",{class:"empty",text:"Mostrando os "+LIM+" mais recentes. Use a busca para achar o resto."}));
-  }
-  var campo=el("input",{class:"search",type:"search",inputmode:"search",autocomplete:"off",
-    style:"max-width:none;width:100%;font-size:15px;padding:10px 14px",
-    placeholder:"Número do WhatsApp ou nome da empresa — ex.: 85 99615-2073",
-    value:STATE.buscaResp||"",
-    oninput:function(e){ STATE.buscaResp=e.target.value; STATE.aberto=null; desenhar(); }});
-  main.appendChild(el("div",{class:"filters"},[campo]));
-  main.appendChild(cont);
-  desenhar();
+/* abre o cartao de um lead ja contatado em Meus leads > Ja contatados */
+function abrirContatado(id){
+  STATE.view="leads"; STATE.filtro="contatados"; STATE.filtroManual=true; STATE.busca="";
+  STATE.aberto=id; STATE.abertoEraNovo=false; render();
+  setTimeout(function(){ var r=document.querySelector("main .row .rbody"); if(r&&r.parentNode.scrollIntoView) r.parentNode.scrollIntoView({block:"start"}); },50);
 }
 
 /* ---------- VIEW: ranking ---------- */
