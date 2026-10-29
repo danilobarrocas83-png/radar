@@ -1,4 +1,4 @@
-# gerado_utc=2026-10-29T07:12:21Z linhas=935 linhas_banco=2227 leads_no_radar=3979
+# gerado_utc=2026-10-29T11:27:42Z linhas=940 linhas_banco=2232 leads_no_radar=3979
 lead	vend	s	d	m
 085-piscinas-comercio-8958	v13	contatado	2026-10-01	contatado
 1000-autos-repasses-8317	v3	contatado	2026-09-29	contatado
@@ -15,7 +15,7 @@ a-b-e-comercial-importadora-e-exportador-10750	v4	contatado	2026-10-28	contatado
 a-c-m-becker-calcados-10152	v11	perdido	2026-10-23	nao_decisor
 a-hora-e-essa-auto-repasse-8389	v14	fup1	2026-10-27	sem_resposta
 a-hora-e-essa-auto-repasse-8389	v3	contatado	2026-09-29	contatado
-a-m-7-7970	v4	contatado	2026-10-27	contatado
+a-m-7-7970	v4	fup1	2026-10-29	sem_resposta
 a-m-7-7970	v6	contatado	2026-10-07	contatado
 a-m-veiculos-9969	v4	contatado	2026-10-28	contatado
 a-r-m-comercio-de-veiculos-11005	v4	perdido	2026-10-14	sem_interesse
@@ -36,7 +36,7 @@ advocacia-paula-lima-9133	v5	fup1	2026-10-07	sem_resposta
 aero-denim-7728	v14	fup1	2026-10-05	sem_resposta
 afa-servicos-e-automoveis-11077	v14	perdido	2026-10-26	contato_errado
 agape-servicos-combinados-9089	v11	contatado	2026-10-01	contatado
-agape-servicos-combinados-9089	v4	contatado	2026-10-27	contatado
+agape-servicos-combinados-9089	v4	fup1	2026-10-29	sem_resposta
 agilli-veiculos-10747	v14	perdido	2026-10-26	contato_errado
 aguirre-importacao-e-exportacao-9010	v11	perdido	2026-10-23	contato_errado
 aira-fibra-8430	v4	fup1	2026-10-27	sem_resposta
@@ -49,7 +49,7 @@ alba-autopecas-11650	v4	contatado	2026-10-28	contatado
 alba-motors-e-servicos-8901	gestor	contatado	2026-10-07	contatado
 alba-motors-e-servicos-8901	v4	fup1	2026-10-27	sem_resposta
 albano-advogados-8603	gestor	contatado	2026-10-07	contatado
-albano-advogados-8603	v4	contatado	2026-10-27	contatado
+albano-advogados-8603	v4	fup1	2026-10-29	sem_resposta
 albernaz-atacadista-8566	v16	contatado	2026-09-29	contatado
 albimaxx-9060	v4	fup2	2026-10-13	sem_resposta
 ale-veiculos-10455	v4	fup2	2026-10-21	sem_resposta
@@ -59,7 +59,8 @@ alexa-joias-7950	v3	contatado	2026-09-28	contatado
 alexa-joias-7950	v4	fup1	2026-10-27	sem_resposta
 alfa-empreendimentos-10016	v4	fup2	2026-10-09	sem_resposta
 alfa-locacoes-de-veiculos-7717	v16	contatado	2026-09-28	contatado
-alianca-comercio-e-distribuicao-8586	v4	contatado	2026-10-27	contatado
+alfa-locacoes-de-veiculos-7717	v4	fup1	2026-10-29	sem_resposta
+alianca-comercio-e-distribuicao-8586	v4	fup1	2026-10-29	sem_resposta
 alianca-comercio-e-distribuicao-8586	v9	contatado	2026-09-29	contatado
 aline-sobrino-joias-11510	v4	fup1	2026-10-28	sem_resposta
 allora-distribuidora-10280	v4	fup2	2026-10-09	sem_resposta
@@ -90,6 +91,7 @@ amo-tanto-lingerie-8120	v16	contatado	2026-09-28	contatado
 ampec-autopecas-8130	v13	contatado	2026-09-30	contatado
 ampec-autopecas-8130	v14	fup1	2026-10-28	sem_resposta
 ampla-7830	v11	contatado	2026-09-28	contatado
+ampla-7830	v4	fup1	2026-10-29	sem_resposta
 amurat-reabilitacao-oral-8053	v11	fup2	2026-10-23	sem_resposta
 amurat-reabilitacao-oral-8053	v14	fup1	2026-10-26	sem_resposta
 ana-julia-calcados-8664	v2	fup1	2026-10-05	sem_resposta
@@ -98,7 +100,7 @@ ancoradouro-distribuidora-e-comercio-de-8660	v13	contatado	2026-09-30	contatado
 andrax-comercio-e-servicos-8458	v16	contatado	2026-09-29	contatado
 andriani-veiculos-9821	v11	contatado	2026-10-23	contatado
 anj-automoveis-9003	v4	perdido	2026-10-15	momento
-ansolin-veiculos-9507	v4	contatado	2026-10-27	contatado
+ansolin-veiculos-9507	v4	fup1	2026-10-29	sem_resposta
 ansolin-veiculos-9507	v9	contatado	2026-10-02	contatado
 antonio-augusto-andrade-albuquerque-10067	v4	contatado	2026-10-28	contatado
 ap-motors-10761	v14	perdido	2026-10-26	contato_errado
@@ -139,7 +141,7 @@ auto-car-multimarcar-9061	v5	fup1	2026-10-07	sem_resposta
 auto-mecanica-goiania-8422	v16	contatado	2026-09-29	contatado
 auto-x-7743	v16	contatado	2026-09-28	contatado
 autocross-multimarcas-9033	gestor	contatado	2026-10-07	contatado
-autocross-multimarcas-9033	v4	contatado	2026-10-27	contatado
+autocross-multimarcas-9033	v4	fup1	2026-10-29	sem_resposta
 autofenix-9523	v11	contatado	2026-10-23	contatado
 autoline-multimarcas-9953	v4	contatado	2026-10-28	contatado
 automania-multimarcas-10873	v4	perdido	2026-10-21	sem_interesse
@@ -157,8 +159,9 @@ azevedo-associados-8641	v14	fup1	2026-10-27	sem_resposta
 azevedo-associados-8641	v3	contatado	2026-09-29	contatado
 azoz-store-9490	v11	contatado	2026-10-23	contatado
 azulim-material-de-construcao-7926	gestor	contatado	2026-09-28	contatado
+azulim-material-de-construcao-7926	v4	perdido	2026-10-29	contato_errado
 azzioly-caminhoes-8433	v14	fup1	2026-10-28	sem_resposta
-azzioly-caminhoes-8433	v4	contatado	2026-10-27	contatado
+azzioly-caminhoes-8433	v4	fup1	2026-10-29	sem_resposta
 b-a-com-9402	v13	contatado	2026-10-01	contatado
 b-p-comercio-de-vestuario-e-acessorios-9052	gestor	fup1	2026-10-08	sem_resposta
 b-p-comercio-de-vestuario-e-acessorios-9052	v4	fup2	2026-10-27	sem_resposta
@@ -176,6 +179,7 @@ batalha-veiculos-8383	v11	contatado	2026-09-29	contatado
 batalha-veiculos-8383	v4	fup1	2026-10-27	sem_resposta
 baterias-pioneiro-distribuidora-10554	v4	perdido	2026-10-16	ja_tem
 batista-atacadao-7640	gestor	contatado	2026-09-28	contatado
+batista-atacadao-7640	v4	perdido	2026-10-29	contato_errado
 bc-empreendimentos-8617	v14	fup1	2026-10-27	sem_resposta
 bc-empreendimentos-8617	v3	contatado	2026-09-29	contatado
 bc-service-9680	gestor	contatado	2026-10-07	contatado
@@ -184,7 +188,7 @@ be-clinic-8079	v4	fup1	2026-10-28	sem_resposta
 bella-home-center-8784	v2	contatado	2026-09-29	contatado
 bem-mulher-maquiagens-11706	v4	fup1	2026-10-28	sem_resposta
 benfit-9178	v2	fup1	2026-10-05	sem_resposta
-berwig-motors-9531	v4	contatado	2026-10-27	contatado
+berwig-motors-9531	v4	fup1	2026-10-29	sem_resposta
 berwig-motors-9531	v9	contatado	2026-10-02	contatado
 bessa-odontologia-e-estetica-8527	v11	contatado	2026-09-29	contatado
 bestway-brazil-infl-mat-corp-11192	v4	perdido	2026-10-16	contato_errado
@@ -207,17 +211,17 @@ blue-fire-7694	v4	fup1	2026-10-27	sem_resposta
 bm-car-10785	v4	fup2	2026-10-21	sem_resposta
 boa-sorte-aluguel-de-carros-9067	v14	contatado	2026-10-05	contatado
 boa-vista-construtora-8281	v3	contatado	2026-09-29	contatado
-boa-vista-construtora-8281	v4	contatado	2026-10-27	contatado
+boa-vista-construtora-8281	v4	fup1	2026-10-29	sem_resposta
 boeira-10620	v4	fup2	2026-10-21	sem_resposta
 bohn-e-bohn-comercio-otico-7672	v4	fup2	2026-10-13	sem_resposta
 bolsa-rio-auto-veiculos-10829	v4	perdido	2026-10-16	contato_errado
 bonifacio-confeccoes-9536	gestor	contatado	2026-10-07	contatado
-bonifacio-confeccoes-9536	v4	contatado	2026-10-27	contatado
+bonifacio-confeccoes-9536	v4	fup1	2026-10-29	sem_resposta
 bonita-pra-dormir-8536	gestor	contatado	2026-10-07	contatado
-bonita-pra-dormir-8536	v4	contatado	2026-10-27	contatado
+bonita-pra-dormir-8536	v4	fup1	2026-10-29	sem_resposta
 bonsono-9316	v4	fup2	2026-10-15	sem_resposta
 booster-do-brasil-9438	v13	contatado	2026-10-01	contatado
-booster-do-brasil-9438	v4	contatado	2026-10-27	contatado
+booster-do-brasil-9438	v4	fup1	2026-10-29	sem_resposta
 borges-torres-veiculos-11027	v4	perdido	2026-10-21	sem_interesse
 botinas-roque-8424	v4	fup2	2026-10-13	sem_resposta
 boutique-inox-9270	v13	contatado	2026-10-01	contatado
@@ -230,6 +234,7 @@ brilhos-festas-7718	gestor	contatado	2026-09-28	contatado
 brissow-malta-consultoria-produtos-e-neg-11368	v4	fup2	2026-10-21	sem_resposta
 bronze-jet-studio-11564	v14	perdido	2026-10-26	contato_errado
 bruna-nycole-clinic-7973	v11	contatado	2026-09-28	contatado
+bruna-nycole-clinic-7973	v4	fup1	2026-10-29	sem_resposta
 bruvita-cosmeticos-11972	v4	perdido	2026-10-26	contato_errado
 bs-beauty-shop-11390	v4	fup2	2026-10-21	sem_resposta
 bsq-construtora-11341	v14	perdido	2026-10-26	contato_errado
@@ -242,7 +247,7 @@ c-h-x-shop-9824	v4	fup2	2026-10-09	sem_resposta
 c-v-randow-locadora-9947	v14	fup1	2026-10-28	sem_resposta
 calcados-nascimento-8782	v16	contatado	2026-09-29	contatado
 caliendo-advocacia-8591	gestor	contatado	2026-10-07	contatado
-caliendo-advocacia-8591	v4	contatado	2026-10-27	contatado
+caliendo-advocacia-8591	v4	fup1	2026-10-29	sem_resposta
 calvas-7822	gestor	contatado	2026-09-28	contatado
 calvas-7822	v14	fup1	2026-10-27	sem_resposta
 camargo-motors-comercio-de-veiculos-7665	v16	contatado	2026-09-28	contatado
@@ -259,7 +264,7 @@ car-app-locadora-de-veiculos-e-servicos-10727	v4	fup1	2026-10-28	sem_resposta
 car-prime-7647	v4	fup1	2026-10-27	sem_resposta
 car-prime-7647	v9	contatado	2026-09-28	contatado
 car-world-9117	gestor	contatado	2026-10-07	contatado
-car-world-9117	v4	contatado	2026-10-27	contatado
+car-world-9117	v4	perdido	2026-10-29	contato_errado
 cardan-nordeste-8444	v13	contatado	2026-09-30	contatado
 cardan-nordeste-8444	v14	fup1	2026-10-28	sem_resposta
 cardoso-atacadista-distribuicao-7744	gestor	contatado	2026-09-28	contatado
@@ -289,7 +294,7 @@ centro-de-referencia-em-cirurgia-plastic-7909	v13	contatado	2026-09-30	contatado
 centro-de-referencia-em-cirurgia-plastic-7909	v4	fup2	2026-10-13	sem_resposta
 centro-estetico-monalisa-7947	v11	contatado	2026-10-01	contatado
 cermica-esperanca-8816	v13	contatado	2026-09-30	contatado
-cermica-esperanca-8816	v4	contatado	2026-10-27	contatado
+cermica-esperanca-8816	v4	fup1	2026-10-29	sem_resposta
 cg-incorporacao-e-construcao-11247	v4	perdido	2026-10-21	sem_interesse
 chic-de-dormir-9342	v13	contatado	2026-10-01	contatado
 chic-de-dormir-9342	v4	perdido	2026-10-15	sem_interesse
@@ -298,7 +303,7 @@ chuanxi-gan-9816	v4	fup2	2026-10-19	sem_resposta
 cime-distribuidora-10432	v4	fup1	2026-10-28	sem_resposta
 clara-ferreira-semijoias-7998	v9	contatado	2026-09-28	contatado
 claudemir-variedades-8994	v13	contatado	2026-10-01	contatado
-claudemir-variedades-8994	v4	contatado	2026-10-27	contatado
+claudemir-variedades-8994	v4	fup1	2026-10-29	sem_resposta
 claudinho-comercio-de-automoveis-9827	v14	perdido	2026-10-26	momento
 clean-comercio-e-servicos-de-revestiment-8528	v13	contatado	2026-09-30	contatado
 clinica-de-estetica-dr-peso-7979	v4	contatado	2026-10-28	contatado
@@ -334,14 +339,14 @@ crosby-9258	v13	contatado	2026-10-01	contatado
 crosby-9258	v14	fup1	2026-10-28	sem_resposta
 crv-distribuidora-8374	v16	contatado	2026-09-29	contatado
 d-carlis-multimarcas-8483	gestor	contatado	2026-10-07	contatado
-d-carlis-multimarcas-8483	v4	contatado	2026-10-27	contatado
+d-carlis-multimarcas-8483	v4	fup1	2026-10-29	sem_resposta
 d-h-fortes-10454	v4	fup1	2026-10-28	sem_resposta
 d-max-pescados-11786	v4	fup2	2026-10-21	sem_resposta
 d-victor-9066	v13	contatado	2026-10-01	contatado
 da-luz-multimarcas-7651	v3	contatado	2026-09-28	contatado
 da-luz-multimarcas-7651	v4	fup1	2026-10-27	sem_resposta
 daniel-rondi-8577	v14	fup1	2026-10-28	sem_resposta
-daniel-rondi-8577	v4	contatado	2026-10-27	contatado
+daniel-rondi-8577	v4	fup1	2026-10-29	sem_resposta
 dannenberg-importadora-e-exportadora-de-9442	v2	contatado	2026-10-01	contatado
 danny-distribuidora-8538	v11	fup1	2026-10-23	sem_resposta
 de-luca-eletronicos-9948	v11	contatado	2026-10-23	contatado
@@ -363,11 +368,11 @@ distribuidora-de-pecas-novo-mundo-10194	v4	contatado	2026-10-28	contatado
 diversos-veiculos-9549	v4	contatado	2026-10-28	contatado
 divino-ponto-de-vista-10972	v4	fup2	2026-10-21	sem_resposta
 dl-car-multimarcas-bh-7681	v3	contatado	2026-09-28	contatado
-dl-car-multimarcas-bh-7681	v4	contatado	2026-10-27	contatado
+dl-car-multimarcas-bh-7681	v4	fup1	2026-10-29	sem_resposta
 dlc-batista-e-8341	v14	fup1	2026-10-27	sem_resposta
 dlc-batista-e-8341	v3	contatado	2026-09-29	contatado
 dm-locacoes-de-veiculos-8505	v14	fup1	2026-10-28	sem_resposta
-dm-locacoes-de-veiculos-8505	v4	contatado	2026-10-27	contatado
+dm-locacoes-de-veiculos-8505	v4	fup1	2026-10-29	sem_resposta
 dna-do-corpo-7985	v11	fup1	2026-10-23	sem_resposta
 dna-do-corpo-7985	v2	fup1	2026-10-07	sem_resposta
 dna-do-corpo-7985	v9	contatado	2026-09-28	contatado
@@ -377,7 +382,7 @@ dr-shape-ribeirao-preto-7668	v14	fup1	2026-10-27	sem_resposta
 dr-shape-ribeirao-preto-7668	v3	contatado	2026-09-28	contatado
 drive-autopecas-10378	v4	fup2	2026-10-21	sem_resposta
 drumond-cunha-oliveira-milagres-mackey-a-9141	gestor	contatado	2026-10-07	contatado
-drumond-cunha-oliveira-milagres-mackey-a-9141	v4	contatado	2026-10-27	contatado
+drumond-cunha-oliveira-milagres-mackey-a-9141	v4	fup1	2026-10-29	sem_resposta
 ducati-vitoria-7873	v16	contatado	2026-09-28	contatado
 ducati-vitoria-7873	v4	fup1	2026-10-27	sem_resposta
 duo-confeccoes-e-acessorios-8748	v2	contatado	2026-09-29	contatado
@@ -393,7 +398,7 @@ eduvi-pedras-do-brasil-7834	v16	contatado	2026-09-28	contatado
 efetiva-textil-10056	v11	contatado	2026-10-23	contatado
 ekling-variedades-7912	v16	fup1	2026-10-08	sem_resposta
 el-joias-7854	gestor	contatado	2026-10-07	contatado
-el-joias-7854	v4	contatado	2026-10-27	contatado
+el-joias-7854	v4	fup1	2026-10-29	sem_resposta
 elaine-rikely-pereira-alves-silva-8025	v11	fup2	2026-10-23	sem_resposta
 elite-locacoes-e-servicos-7751	v2	fup1	2026-10-07	sem_resposta
 elite-locacoes-e-servicos-7751	v9	contatado	2026-09-28	contatado
@@ -405,7 +410,7 @@ enderson-mesquita-advogados-associados-8613	v14	perdido	2026-10-26	contato_errad
 entrefios-armarinho-8054	v4	contatado	2026-10-28	contatado
 enzo-mangueiras-e-pecas-10598	v4	fup2	2026-10-21	sem_resposta
 epi-total-8776	gestor	contatado	2026-10-07	contatado
-epi-total-8776	v4	contatado	2026-10-27	contatado
+epi-total-8776	v4	fup1	2026-10-29	sem_resposta
 era-do-gelo-servicos-8998	v2	contatado	2026-10-01	contatado
 eridata-telecomunicacoes-9668	v4	fup1	2026-10-28	sem_resposta
 escolha-veiculos-10697	v4	perdido	2026-10-21	sem_interesse
@@ -443,7 +448,7 @@ flexcar-9573	v4	contatado	2026-10-28	contatado
 fort-atacadao-moto-pecas-7964	v16	fup1	2026-10-08	sem_resposta
 francarton-8280	v4	fup2	2026-10-13	sem_resposta
 francisco-marcelino-do-monte-lima-8605	v3	contatado	2026-09-29	contatado
-francisco-marcelino-do-monte-lima-8605	v4	contatado	2026-10-27	contatado
+francisco-marcelino-do-monte-lima-8605	v4	fup1	2026-10-29	sem_resposta
 freitas-brutos-7642	v14	fup1	2026-10-27	sem_resposta
 freitas-brutos-7642	v3	contatado	2026-09-28	contatado
 freitas-multimarcas-9895	v4	perdido	2026-10-26	contato_errado
@@ -478,10 +483,10 @@ grupo-fill-a-fill-9030	v13	contatado	2026-10-06	contatado
 grupo-ijp-8314	v16	fup1	2026-10-08	sem_resposta
 grupo-policom-9090	v13	contatado	2026-10-06	contatado
 grupo-repertorio-uniflex-jardim-maua-sal-7798	v3	contatado	2026-09-28	contatado
-grupo-repertorio-uniflex-jardim-maua-sal-7798	v4	contatado	2026-10-27	contatado
+grupo-repertorio-uniflex-jardim-maua-sal-7798	v4	fup1	2026-10-29	sem_resposta
 grupo-santos-refrigeracao-climatizacao-10158	v11	contatado	2026-10-23	contatado
 gst-nautica-8421	v14	fup1	2026-10-28	sem_resposta
-gst-nautica-8421	v4	contatado	2026-10-27	contatado
+gst-nautica-8421	v4	fup1	2026-10-29	sem_resposta
 gtx-auto-parts-10422	v4	fup2	2026-10-26	sem_resposta
 guedes-de-araujo-11115	v4	fup1	2026-10-28	sem_resposta
 guilherme-schumann-anselmo-11181	v4	fup1	2026-10-28	sem_resposta
@@ -510,12 +515,12 @@ ilha-implantes-odontologicos-8081	v16	fup1	2026-10-06	sem_resposta
 illuminare-brasil-distribuidora-de-varie-10302	v14	fup1	2026-10-28	sem_resposta
 impetuosa-9942	v4	perdido	2026-10-16	sem_interesse
 importphone-8548	gestor	contatado	2026-10-07	contatado
-importphone-8548	v4	contatado	2026-10-27	contatado
+importphone-8548	v4	fup1	2026-10-29	sem_resposta
 independencia-caminhoes-7785	v14	fup1	2026-10-27	sem_resposta
 independencia-caminhoes-7785	v3	contatado	2026-09-28	contatado
 indumentaria-8002	v11	fup2	2026-10-20	sem_resposta
 inovar-solucoes-e-servcos-em-ti-7902	v3	contatado	2026-09-28	contatado
-inovar-solucoes-e-servcos-em-ti-7902	v4	contatado	2026-10-27	contatado
+inovar-solucoes-e-servcos-em-ti-7902	v4	fup1	2026-10-29	sem_resposta
 inove-tecnologia-7894	v2	fup1	2026-10-07	sem_resposta
 inove-tecnologia-7894	v9	contatado	2026-09-28	contatado
 iser-auto-ltda-11071	v4	perdido	2026-10-21	sem_interesse
