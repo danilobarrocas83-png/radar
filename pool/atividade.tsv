@@ -1,4 +1,4 @@
-# gerado_utc=2026-10-29T12:53:30Z linhas=940 linhas_banco=2232 leads_no_radar=3979
+# gerado_utc=2026-10-30T07:10:54Z linhas=946 linhas_banco=2238 leads_no_radar=3979
 lead	vend	s	d	m
 085-piscinas-comercio-8958	v13	contatado	2026-10-01	contatado
 1000-autos-repasses-8317	v3	contatado	2026-09-29	contatado
@@ -87,6 +87,7 @@ amg-9028	v9	contatado	2026-10-01	contatado
 amiex-9722	v4	contatado	2026-10-28	contatado
 amil-empreendimentos-8287	v11	contatado	2026-09-29	contatado
 amil-empreendimentos-8287	v14	fup1	2026-10-27	sem_resposta
+amo-tanto-lingerie-8120	v14	fup1	2026-10-29	sem_resposta
 amo-tanto-lingerie-8120	v16	contatado	2026-09-28	contatado
 ampec-autopecas-8130	v13	contatado	2026-09-30	contatado
 ampec-autopecas-8130	v14	fup1	2026-10-28	sem_resposta
@@ -139,6 +140,7 @@ aurora-co-br-9924	v11	contatado	2026-10-23	contatado
 autenticar-veiculos-10675	v4	fup1	2026-10-28	sem_resposta
 auto-car-multimarcar-9061	v5	fup1	2026-10-07	sem_resposta
 auto-mecanica-goiania-8422	v16	contatado	2026-09-29	contatado
+auto-x-7743	v14	fup1	2026-10-29	sem_resposta
 auto-x-7743	v16	contatado	2026-09-28	contatado
 autocross-multimarcas-9033	gestor	contatado	2026-10-07	contatado
 autocross-multimarcas-9033	v4	fup1	2026-10-29	sem_resposta
@@ -170,6 +172,7 @@ baby-gift-mundo-infantil-8364	v2	contatado	2026-09-29	contatado
 backcar-veiculos-7895	v11	contatado	2026-09-28	contatado
 bacuri-empreendimentos-imobiliarios-11275	v14	perdido	2026-10-26	contato_errado
 bali-blue-8290	v16	contatado	2026-09-29	contatado
+baluarte-tecidos-8102	v14	fup1	2026-10-29	sem_resposta
 baluarte-tecidos-8102	v9	contatado	2026-09-28	contatado
 barba-brasil-11000	v14	perdido	2026-10-26	ja_tem
 barbosa-comercio-otico-9380	v4	contatado	2026-10-28	contatado
@@ -231,6 +234,7 @@ brasileirissima-moda-feminina-10652	v4	fup1	2026-10-28	sem_resposta
 braslic-comercio-de-produtos-nauticos-8790	v4	perdido	2026-10-15	sem_interesse
 bravius-8386	v16	contatado	2026-09-29	contatado
 brilhos-festas-7718	gestor	contatado	2026-09-28	contatado
+brilhos-festas-7718	v14	fup1	2026-10-29	sem_resposta
 brissow-malta-consultoria-produtos-e-neg-11368	v4	fup2	2026-10-21	sem_resposta
 bronze-jet-studio-11564	v14	perdido	2026-10-26	contato_errado
 bruna-nycole-clinic-7973	v11	contatado	2026-09-28	contatado
@@ -268,6 +272,7 @@ car-world-9117	v4	perdido	2026-10-29	contato_errado
 cardan-nordeste-8444	v13	contatado	2026-09-30	contatado
 cardan-nordeste-8444	v14	fup1	2026-10-28	sem_resposta
 cardoso-atacadista-distribuicao-7744	gestor	contatado	2026-09-28	contatado
+cardoso-atacadista-distribuicao-7744	v14	fup1	2026-10-29	sem_resposta
 careta-veiculos-10543	v4	perdido	2026-10-21	sem_interesse
 carplace-automoveis-10741	v4	fup2	2026-10-21	sem_resposta
 carro-cia-9929	v4	contatado	2026-10-28	contatado
@@ -289,6 +294,7 @@ cd-comercio-de-materiais-eletricos-11720	v4	perdido	2026-10-21	sem_interesse
 cenci-industria-e-comercio-ltda-9926	v4	contatado	2026-10-28	contatado
 center-atacadista-8432	v13	contatado	2026-09-30	contatado
 central-9474	v13	contatado	2026-10-01	contatado
+central-9474	v14	contatado	2026-10-29	contatado
 centro-de-distribuicao-de-alimentos-plen-8058	v3	contatado	2026-09-28	contatado
 centro-de-referencia-em-cirurgia-plastic-7909	v13	contatado	2026-09-30	contatado
 centro-de-referencia-em-cirurgia-plastic-7909	v4	fup2	2026-10-13	sem_resposta
@@ -613,9 +619,9 @@ luft-shoes-11918	v4	fup1	2026-10-28	sem_resposta
 luiz-augusto-yamashitafuji-8129	v11	fup2	2026-10-20	sem_resposta
 luiz-tecidos-7884	gestor	contatado	2026-10-07	contatado
 luiz-tecidos-7884	v4	fup1	2026-10-27	sem_resposta
-lune-baby-8304	v14	contatado	2026-10-26	contatado
+lune-baby-8304	v14	fup1	2026-10-29	sem_resposta
 luso-cosmetics-9960	v4	perdido	2026-10-16	sem_interesse
-m-a-tavares-confeccoes-10222	v14	contatado	2026-10-26	contatado
+m-a-tavares-confeccoes-10222	v14	fup1	2026-10-29	sem_resposta
 m-b-all-9358	v11	fup1	2026-10-23	sem_resposta
 m-e-moda-feminina-11148	v4	fup2	2026-10-26	sem_resposta
 m-gold-joias-9462	v13	contatado	2026-10-06	contatado
@@ -635,10 +641,10 @@ malyks-cosmeticos-9160	v4	fup2	2026-10-19	sem_resposta
 manocar-7837	v3	contatado	2026-09-28	contatado
 manocar-7837	v4	fup1	2026-10-29	sem_resposta
 manta-11973	v4	fup1	2026-10-28	sem_resposta
-marci-8856	v14	contatado	2026-10-26	contatado
+marci-8856	v14	fup1	2026-10-29	sem_resposta
 marcia-regina-agostinis-freire-9236	v11	fup1	2026-10-23	sem_resposta
 mare-mansa-10108	v4	fup1	2026-10-28	sem_resposta
-marfim-joias-9692	v14	contatado	2026-10-26	contatado
+marfim-joias-9692	v14	fup1	2026-10-29	sem_resposta
 maria-joias-ag-exclusive-7690	v4	fup1	2026-10-28	sem_resposta
 mariel-cosmeticos-10664	v4	perdido	2026-10-21	contato_errado
 materia-prima-suplementos-balneario-camb-10364	v4	contatado	2026-10-05	contatado
@@ -663,13 +669,13 @@ minas-8398	v4	contatado	2026-10-28	contatado
 mini-scar-pg-8907	v4	contatado	2026-10-28	contatado
 mitte-8992	v11	perdido	2026-10-23	nao_decisor
 mixmor-matriz-10950	v4	fup1	2026-10-28	sem_resposta
-monnopolio-8126	v4	contatado	2026-10-28	contatado
+monnopolio-8126	v4	perdido	2026-10-29	nao_decisor
 monteiro-comercio-de-produtos-7656	v4	fup1	2026-10-05	sem_resposta
 monvale-10132	v4	perdido	2026-10-16	ja_tem
 moschitta-mendes-advogados-8593	v4	fup1	2026-10-28	sem_resposta
 moura-dias-advogados-associados-8145	v4	contatado	2026-10-28	contatado
 move-on-esporte-8616	v2	fup1	2026-10-05	sem_resposta
-mover-locacoes-7737	v14	contatado	2026-10-26	contatado
+mover-locacoes-7737	v14	fup1	2026-10-29	sem_resposta
 mrm-mony-comercio-de-artigos-do-vestuari-7928	v11	contatado	2026-10-23	contatado
 mt-comercio-de-aviamentos-8172	v4	fup2	2026-10-13	sem_resposta
 mtractor-comercio-e-representacao-de-pec-7868	v9	contatado	2026-09-28	contatado
@@ -704,7 +710,7 @@ odonto-primavera-8051	v11	fup2	2026-10-20	sem_resposta
 odontocompany-10027	v4	fup1	2026-10-28	sem_resposta
 odontocompany-10031	v4	contatado	2026-10-28	contatado
 odontocompany-abre-campo-mg-8033	v4	fup1	2026-10-05	sem_resposta
-odontocompany-dirceu-8071	v14	contatado	2026-10-26	contatado
+odontocompany-dirceu-8071	v14	fup1	2026-10-29	sem_resposta
 odontocompany-mangabeira-8035	v11	fup2	2026-10-20	sem_resposta
 odontocompany-quatro-barras-8543	gestor	contatado	2026-10-07	contatado
 odontocompany-quatro-barras-8543	v4	fup1	2026-10-29	sem_resposta
@@ -724,10 +730,10 @@ oraldents-rio-das-ostras-8555	v4	fup1	2026-10-29	sem_resposta
 osd-byousado-9664	v11	contatado	2026-10-23	contatado
 otavio-dionisio-ramos-ruedas-11544	v4	perdido	2026-10-21	contato_errado
 otica-bem-ver-7960	v11	fup2	2026-10-20	sem_resposta
-otica-consulado-dos-oculos-9058	v14	contatado	2026-10-26	contatado
+otica-consulado-dos-oculos-9058	v14	fup1	2026-10-29	sem_resposta
 otica-e-joalheria-merigo-9810	v4	perdido	2026-10-16	sem_interesse
 otica-especialista-black-11214	v4	fup1	2026-10-28	sem_resposta
-otica-look-center-9334	v14	contatado	2026-10-26	contatado
+otica-look-center-9334	v14	fup1	2026-10-29	sem_resposta
 otica-sao-jorge-10038	v14	perdido	2026-10-26	contato_errado
 otica-sao-jose-8562	v11	fup1	2026-10-23	sem_resposta
 otica-vitale-9612	v5	fup1	2026-10-07	sem_resposta
@@ -742,7 +748,7 @@ oticas-yoou-7864	v4	fup1	2026-10-05	sem_resposta
 oticasil-9426	v13	contatado	2026-10-06	contatado
 our-family-importadora-e-exportadora-ltd-8164	v5	fup1	2026-10-06	sem_resposta
 ouro-preto-11093	v4	fup1	2026-10-28	sem_resposta
-pacheco-e-marinho-advogados-9615	v14	contatado	2026-10-26	contatado
+pacheco-e-marinho-advogados-9615	v14	fup1	2026-10-29	sem_resposta
 padilha-cardoso-9282	v13	contatado	2026-10-06	contatado
 palermo-comercio-exterior-9168	v4	fup1	2026-10-05	sem_resposta
 panificadora-duas-irmas-9420	v4	fup1	2026-10-05	sem_resposta
@@ -790,7 +796,7 @@ rafa-comercio-de-seminovos-campinas-9093	v4	perdido	2026-10-29	contato_errado
 rafa-motors-8323	v11	contatado	2026-09-29	contatado
 rafa-motors-8323	v14	fup1	2026-10-27	sem_resposta
 rayla-carneiro-9153	gestor	contatado	2026-10-07	contatado
-rayla-carneiro-9153	v4	fup1	2026-10-29	sem_resposta
+rayla-carneiro-9153	v4	perdido	2026-10-29	sem_interesse
 razevel-veiculos-10939	v4	fup1	2026-10-28	sem_resposta
 rcar-multimarcas-veiculos-8989	v4	fup1	2026-10-29	sem_resposta
 rcar-multimarcas-veiculos-8989	v5	contatado	2026-10-01	contatado
@@ -811,7 +817,7 @@ retro-manaus-11588	v4	fup1	2026-10-28	sem_resposta
 revitalar-10076	v4	contatado	2026-10-05	contatado
 rf-motors-8407	v11	contatado	2026-09-29	contatado
 rf-motors-8407	v4	fup1	2026-10-27	sem_resposta
-ribeiro-veiculos-e-negocios-9907	v14	contatado	2026-10-26	contatado
+ribeiro-veiculos-e-negocios-9907	v14	fup1	2026-10-29	sem_resposta
 rj-distribuidora-7648	v11	fup2	2026-10-20	sem_resposta
 rn-multisservicos-8437	v4	perdido	2026-10-28	sem_interesse
 rocha-dias-sociedade-de-advogados-8607	v4	contatado	2026-10-28	contatado
@@ -845,7 +851,7 @@ sapataria-vangeli-7918	v11	contatado	2026-10-23	contatado
 schulz-joias-11852	v4	fup2	2026-10-26	sem_resposta
 seeet-moda-8434	v11	fup1	2026-10-23	sem_resposta
 seg-international-8978	v4	fup2	2026-10-15	sem_resposta
-seguranca-8488	v14	contatado	2026-10-26	contatado
+seguranca-8488	v14	fup1	2026-10-29	sem_resposta
 sergio-goncalves-jr-9165	gestor	contatado	2026-10-07	contatado
 sergio-goncalves-jr-9165	v4	fup1	2026-10-29	sem_resposta
 shalom-veiculos-10609	v4	fup1	2026-10-28	sem_resposta
@@ -854,7 +860,7 @@ shc-motors-9555	v4	fup2	2026-10-19	sem_resposta
 shoemix-9932	v4	contatado	2026-10-05	contatado
 shu-limpeza-10112	v4	contatado	2026-10-05	contatado
 silverio-veiculos-10521	v4	fup1	2026-10-28	sem_resposta
-silvia-rodrigues-estetica-avancada-7941	v14	contatado	2026-10-26	contatado
+silvia-rodrigues-estetica-avancada-7941	v14	perdido	2026-10-29	ja_tem
 sino-trade-comercio-de-confeccoes-import-9074	v11	contatado	2026-10-23	contatado
 skala-tecidos-9992	v4	fup2	2026-10-13	sem_resposta
 sobini-imports-9398	v11	contatado	2026-10-23	contatado
@@ -885,19 +891,19 @@ techfrota-7635	v11	fup2	2026-10-20	sem_resposta
 tecno-haus-informatica-9850	v4	contatado	2026-10-28	contatado
 teixeira-sociedade-individual-de-advocac-9633	v4	fup1	2026-10-28	sem_resposta
 th-custom-9186	v13	contatado	2026-10-06	contatado
-the-auge-bike-shop-10248	v14	contatado	2026-10-26	contatado
-tomimatsu-epi-s-8440	v14	contatado	2026-10-26	contatado
+the-auge-bike-shop-10248	v14	fup1	2026-10-29	sem_resposta
+tomimatsu-epi-s-8440	v14	fup1	2026-10-29	sem_resposta
 top-cesta-9776	v4	fup2	2026-10-13	sem_resposta
 torquato-textil-8390	v4	fup2	2026-10-19	sem_resposta
 total-distribuidora-9838	v4	perdido	2026-10-16	sem_interesse
-trendlis-9158	v14	contatado	2026-10-26	contatado
+trendlis-9158	v14	fup1	2026-10-29	sem_resposta
 tri-dent-implantodontia-8075	v4	contatado	2026-10-28	contatado
 tti-informatica-7946	v9	contatado	2026-09-28	contatado
-turbo-locadora-9083	v14	contatado	2026-10-26	contatado
+turbo-locadora-9083	v14	fup1	2026-10-29	sem_resposta
 turchiari-8573	v4	contatado	2026-10-28	contatado
 un-auto-comercio-de-veiculos-9525	v4	fup2	2026-10-13	sem_resposta
-uniderma-7927	v14	contatado	2026-10-26	contatado
-unifort-9632	v14	contatado	2026-10-26	contatado
+uniderma-7927	v14	fup1	2026-10-29	sem_resposta
+unifort-9632	v14	fup1	2026-10-29	sem_resposta
 universal-distribuidora-9530	v4	perdido	2026-10-28	contato_errado
 up-com-importadora-10100	v4	fup2	2026-10-13	sem_resposta
 up-prime-veiculos-8447	gestor	contatado	2026-10-07	contatado
@@ -924,7 +930,7 @@ vinha-distribuidora-9154	v2	contatado	2026-10-01	contatado
 visao-comercio-de-eletronicos-importacao-7924	v4	perdido	2026-10-28	contato_errado
 vitrine-veiculos-9487	v4	contatado	2026-10-28	contatado
 vivati-odontologia-8015	v9	contatado	2026-09-28	contatado
-vizzotto-pirani-sociedade-de-advogados-10041	v14	contatado	2026-10-26	contatado
+vizzotto-pirani-sociedade-de-advogados-10041	v14	fup1	2026-10-29	sem_resposta
 w-d-enxovais-10198	v4	perdido	2026-10-14	contato_errado
 web-commerce-e-solucoes-8114	v11	fup2	2026-10-20	sem_resposta
 welpie-industria-9112	v4	perdido	2026-10-16	sem_interesse
@@ -934,7 +940,7 @@ wr-martins-8966	v4	fup1	2026-10-28	sem_resposta
 wsa-comercio-servicos-10334	v4	contatado	2026-10-28	contatado
 wse-comercio-8640	v2	fup1	2026-10-05	sem_resposta
 x-trade-importadora-e-comercio-8220	v11	fup2	2026-10-20	sem_resposta
-x-z-oulusha-9584	v14	contatado	2026-10-26	contatado
+x-z-oulusha-9584	v14	fup1	2026-10-29	sem_resposta
 xomano-aluga-8473	v4	perdido	2026-10-28	sem_interesse
 ylyz-comercio-de-confeccoes-8796	v2	fup1	2026-10-05	sem_resposta
 zeiss-vision-center-8008	v5	fup1	2026-10-06	sem_resposta
