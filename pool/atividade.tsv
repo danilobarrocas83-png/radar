@@ -1,4 +1,4 @@
-# gerado_utc=2026-10-30T07:10:54Z linhas=946 linhas_banco=2238 leads_no_radar=3979
+# gerado_utc=2026-10-30T11:19:25Z linhas=950 linhas_banco=2242 leads_no_radar=3979
 lead	vend	s	d	m
 085-piscinas-comercio-8958	v13	contatado	2026-10-01	contatado
 1000-autos-repasses-8317	v3	contatado	2026-09-29	contatado
@@ -28,6 +28,7 @@ ac-distribuidora-10146	v4	perdido	2026-10-26	contato_errado
 ac-rio-branco-comercio-de-calcados-9038	v11	contatado	2026-10-23	contatado
 acai-da-terra-11748	v14	perdido	2026-10-26	contato_errado
 acaray-mangueiras-9812	v4	fup2	2026-10-09	sem_resposta
+acemar-industria-quimica-e-comercio-11062	v14	contatado	2026-10-30	contatado
 acerto-confeccoes-8722	v16	contatado	2026-09-29	contatado
 acium-tambore-10754	v4	fup1	2026-10-28	sem_resposta
 ad-brita-10818	v4	perdido	2026-10-21	sem_interesse
@@ -57,12 +58,14 @@ alejandro-automoveis-10807	v4	fup2	2026-10-21	sem_resposta
 aleksander-fernando-delmutti-9016	v9	contatado	2026-10-01	contatado
 alexa-joias-7950	v3	contatado	2026-09-28	contatado
 alexa-joias-7950	v4	fup1	2026-10-27	sem_resposta
+alexcel-11772	v14	contatado	2026-10-30	contatado
 alfa-empreendimentos-10016	v4	fup2	2026-10-09	sem_resposta
 alfa-locacoes-de-veiculos-7717	v16	contatado	2026-09-28	contatado
 alfa-locacoes-de-veiculos-7717	v4	fup1	2026-10-29	sem_resposta
 alianca-comercio-e-distribuicao-8586	v4	fup1	2026-10-29	sem_resposta
 alianca-comercio-e-distribuicao-8586	v9	contatado	2026-09-29	contatado
 aline-sobrino-joias-11510	v4	fup1	2026-10-28	sem_resposta
+allcar-comercio-de-veiculos-10585	v14	contatado	2026-10-30	contatado
 allora-distribuidora-10280	v4	fup2	2026-10-09	sem_resposta
 alpine-do-brasil-8710	v16	contatado	2026-09-29	contatado
 alplas-embalagens-8224	v16	contatado	2026-09-28	contatado
@@ -75,6 +78,7 @@ alumaxi-9280	v9	contatado	2026-10-01	contatado
 aluminum-furniture-11610	v4	perdido	2026-10-16	ja_tem
 alux-web-comunicacao-co-ltda-10648	v14	perdido	2026-10-26	contato_errado
 alves-e-melo-8302	v16	contatado	2026-09-29	contatado
+alves-moura-empreendimentos-imobiliarios-11257	v14	contatado	2026-10-30	contatado
 alvorada-pneus-para-8944	v9	contatado	2026-10-01	contatado
 amarildo-automoveis-10631	v4	perdido	2026-10-21	sem_interesse
 amb-calcados-9018	v13	contatado	2026-10-01	contatado
