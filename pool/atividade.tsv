@@ -1,4 +1,4 @@
-# gerado_utc=2026-11-11T12:38:05Z linhas=1149 linhas_banco=4627 leads_no_radar=3976
+# gerado_utc=2026-11-11T14:09:02Z linhas=1149 linhas_banco=4627 leads_no_radar=3976
 lead	vend	s	d	m
 061-veiculos-10015	v14	fup1	2026-11-09	sem_resposta
 085-piscinas-comercio-8958	v13	contatado	2026-10-01	contatado
@@ -266,7 +266,7 @@ blc-store-9934	v4	contatado	2026-10-28	contatado
 bless-estetica-avancada-7923	v14	fup1	2026-11-10	sem_resposta
 blue-fire-7694	v3	contatado	2026-09-28	contatado
 blue-fire-7694	v4	fup1	2026-10-27	sem_resposta
-blue-motors-10493	v14	contatado	2026-11-11	contatado
+blue-motors-10493	v14	conversa	2026-11-11	conversando
 bm-car-10785	v4	fup2	2026-10-21	sem_resposta
 boa-sorte-aluguel-de-carros-9067	v14	contatado	2026-10-05	contatado
 boa-vista-construtora-8281	v3	contatado	2026-09-29	contatado
@@ -400,7 +400,7 @@ coimi-empreendimentos-imobiliarios-8167	v4	fup1	2026-10-27	sem_resposta
 coimi-empreendimentos-imobiliarios-8167	v9	contatado	2026-09-28	contatado
 collares-automoveis-10411	v4	fup2	2026-10-21	sem_resposta
 colorshoes-comercio-de-calcados-e-acesso-10328	v4	fup2	2026-10-09	sem_resposta
-comercial-almeida-11702	v14	contatado	2026-11-11	contatado
+comercial-almeida-11702	v14	perdido	2026-11-11	ja_tem
 comercial-mota-8820	v4	perdido	2026-10-28	contato_errado
 comercial-proteger-11110	v14	fup1	2026-11-03	sem_resposta
 comercial-quatis-de-produtos-alimenticio-10216	v4	fup2	2026-10-19	sem_resposta
@@ -764,7 +764,7 @@ limpa-cia-10516	v14	contatado	2026-11-11	contatado
 limpa-up-town-9086	v11	fup2	2026-10-20	sem_resposta
 lina-bijuterias-e-variedades-7738	v14	fup1	2026-11-05	sem_resposta
 lina-bijuterias-e-variedades-7738	v9	contatado	2026-09-28	contatado
-linho-comercio-10758	v14	contatado	2026-11-11	contatado
+linho-comercio-10758	v14	perdido	2026-11-11	ja_tem
 lion-tj-7976	v5	fup1	2026-10-06	sem_resposta
 lira-atacado-9820	v4	perdido	2026-10-16	sem_interesse
 liso-perfeito-brasil-academy-10244	v4	fup2	2026-10-09	sem_resposta
@@ -800,7 +800,7 @@ luiz-tecidos-7884	gestor	contatado	2026-10-07	contatado
 luiz-tecidos-7884	v4	fup1	2026-10-27	sem_resposta
 luna-11602	v14	contatado	2026-11-11	contatado
 lune-baby-8304	v14	fup1	2026-10-29	sem_resposta
-lurhao-intermediacoes-negocios-e-servico-10533	v14	contatado	2026-11-11	contatado
+lurhao-intermediacoes-negocios-e-servico-10533	v14	perdido	2026-11-11	sem_interesse
 luso-cosmetics-9960	v4	perdido	2026-10-16	sem_interesse
 m-a-tavares-confeccoes-10222	v14	fup1	2026-10-29	sem_resposta
 m-b-all-9358	v11	fup1	2026-10-23	sem_resposta
