@@ -1,4 +1,4 @@
-# gerado_utc=2026-11-23T15:52:26Z linhas=1217 linhas_banco=4779 leads_no_radar=3894
+# gerado_utc=2026-11-23T17:57:10Z linhas=1217 linhas_banco=4779 leads_no_radar=3894
 lead	vend	s	d	m
 061-veiculos-10015	v14	fup1	2026-11-09	sem_resposta
 085-piscinas-comercio-8958	v13	contatado	2026-10-01	contatado
@@ -882,7 +882,7 @@ melo-multimarcas-8460	v2	fup1	2026-10-05	sem_resposta
 memphis-automotive-service-9991	v4	contatado	2026-10-28	contatado
 menezes-comercio-de-veiculos-10485	v14	fup1	2026-11-23	sem_resposta
 mercado-seguro-imoveis-11319	v14	fup1	2026-11-23	sem_resposta
-mercatto-brasil-comercio-de-materiais-el-11186	v14	reuniao	2026-11-23	reuniao
+mercatto-brasil-comercio-de-materiais-el-11186	v14	perdido	2026-11-23	momento
 mercatto-brasil-couros-e-peles-8846	v4	fup2	2026-10-27	sem_resposta
 mercatto-da-festa-8560	v11	fup2	2026-10-20	sem_resposta
 mercurio-equipamentos-de-seguranca-9262	v4	fup2	2026-10-15	sem_resposta
