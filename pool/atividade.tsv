@@ -1,4 +1,4 @@
-# gerado_utc=2026-11-24T07:08:26Z linhas=1217 linhas_banco=4779 leads_no_radar=3894
+# gerado_utc=2026-11-24T15:44:14Z linhas=1216 linhas_banco=4779 leads_no_radar=3893
 lead	vend	s	d	m
 061-veiculos-10015	v14	fup1	2026-11-09	sem_resposta
 085-piscinas-comercio-8958	v13	contatado	2026-10-01	contatado
@@ -515,7 +515,6 @@ edilu-perfumaria-e-cosmeticos-8136	v3	contatado	2026-09-28	contatado
 edivan-ritz-farias-10340	v4	fup2	2026-10-09	sem_resposta
 eduvi-pedras-do-brasil-7834	v11	fup1	2026-11-16	sem_resposta
 eduvi-pedras-do-brasil-7834	v16	contatado	2026-09-28	contatado
-efetiva-textil-10056	v11	bloqueado	2026-11-16	pediu_parar
 ekling-variedades-7912	v16	fup1	2026-10-08	sem_resposta
 el-joias-7854	gestor	contatado	2026-10-07	contatado
 el-joias-7854	v4	fup1	2026-10-29	sem_resposta
